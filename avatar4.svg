@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <circle cx="50" cy="50" r="50" fill="#FEF3C7"/>
+  <!-- Toga -->
+  <ellipse cx="50" cy="78" rx="26" ry="16" fill="white" stroke="#D1D5DB" stroke-width="1"/>
+  <rect x="28" y="62" width="44" height="18" rx="2" fill="white" stroke="#D1D5DB" stroke-width="1"/>
+  <!-- Toga drape -->
+  <path d="M28 62 Q35 55 50 60 Q65 55 72 62" fill="white" stroke="#D1D5DB" stroke-width="1"/>
+  <!-- Laurel wreath -->
+  <path d="M30 36 Q25 28 32 24 Q38 20 40 28" fill="#16A34A" opacity="0.8"/>
+  <path d="M70 36 Q75 28 68 24 Q62 20 60 28" fill="#16A34A" opacity="0.8"/>
+  <ellipse cx="50" cy="26" rx="12" ry="4" fill="#16A34A" opacity="0.6"/>
+  <!-- Head - empanada shaped! -->
+  <ellipse cx="50" cy="42" rx="18" ry="14" fill="#F59E0B"/>
+  <!-- Empanada crimped edge -->
+  <path d="M32 42 Q33 30 50 28 Q67 30 68 42" fill="#EF9F27" stroke="#D97706" stroke-width="1.5" stroke-dasharray="3,2"/>
+  <!-- Eyes -->
+  <circle cx="44" cy="40" r="3" fill="white"/>
+  <circle cx="56" cy="40" r="3" fill="white"/>
+  <circle cx="44" cy="40" r="1.5" fill="#1C1917"/>
+  <circle cx="56" cy="40" r="1.5" fill="#1C1917"/>
+  <!-- Stern serious mouth -->
+  <line x1="44" y1="49" x2="56" y2="49" stroke="#92400E" stroke-width="2" stroke-linecap="round"/>
+  <!-- Scroll/book -->
+  <rect x="38" y="68" width="24" height="16" rx="2" fill="#FEF3C7" stroke="#D1D5DB" stroke-width="1"/>
+  <line x1="42" y1="73" x2="58" y2="73" stroke="#94A3B8" stroke-width="1"/>
+  <line x1="42" y1="77" x2="58" y2="77" stroke="#94A3B8" stroke-width="1"/>
+  <line x1="42" y1="81" x2="54" y2="81" stroke="#94A3B8" stroke-width="1"/>
+  <!-- Arms -->
+  <line x1="34" y1="66" x2="24" y2="74" stroke="white" stroke-width="5" stroke-linecap="round"/>
+  <line x1="66" y1="66" x2="76" y2="74" stroke="white" stroke-width="5" stroke-linecap="round"/>
+</svg>
