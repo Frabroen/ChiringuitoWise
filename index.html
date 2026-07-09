@@ -922,7 +922,7 @@ function renderSettle(net){
     <div class="list-item" style="gap:8px">
       <div class="avatar" style="width:28px;height:28px;font-size:11px;background:${getMemberBg(t.from)};overflow:hidden">${getMemberAvatar(t.from)}</div>
       <span class="settle-arrow">→</span>
-      <div class="avatar" style="width:28px;height:28px;font-size:11px;background:${av(t.to)}">${initials(t.to)}</div>
+      <div class="avatar" style="width:28px;height:28px;font-size:11px;background:${getMemberBg(t.to)};overflow:hidden">${getMemberAvatar(t.to)}</div>
       <span style="flex:1;font-size:13px;font-weight:500">${t.from} paga a ${t.to}</span>
       <span class="settle-amt">${fmt(t.amt)}</span>
       ${t.from===state.me||t.to===state.me?`<button class="settle-btn" onclick="markSettled('${t.from}','${t.to}',${t.amt})">Saldar 🤝</button>`:''}
