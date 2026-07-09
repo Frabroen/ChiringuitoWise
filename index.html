@@ -813,7 +813,28 @@ function renderAll(){
   if(total>seen) document.getElementById('notif-badge').style.display='flex';
 }
 
+function getMemberAvatar(name){
+  const memberData=state.group?.members?.[name];
+  const idx=memberData?.avatar;
+  if(idx!==null&&idx!==undefined){
+    return `<img src="avatars/avatar${idx+1}.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%" alt="${name}">`;
+  }
+  return `<span style="font-size:13px;font-weight:600;color:white">${initials(name)}</span>`;
+}
+
+function getMemberBg(name){
+  const memberData=state.group?.members?.[name];
+  return (memberData?.avatar!==null&&memberData?.avatar!==undefined) ? 'transparent' : av(name);
+}
+
 function renderMembers(members){
+  document.getElementById('members-list').innerHTML=members.map(m=>`
+    <div class="member-row">
+      <div class="avatar" style="background:${getMemberBg(m)};overflow:hidden">${getMemberAvatar(m)}</div>
+      <div style="flex:1;font-size:14px;font-weight:500">${m}</div>
+      ${m===state.me?'<span class="you-tag">Tú 🌟</span>':''}
+    </div>`).join('');
+}
   document.getElementById('members-list').innerHTML=members.map(m=>`
     <div class="member-row">
       <div class="avatar" style="background:${av(m)}">${initials(m)}</div>
