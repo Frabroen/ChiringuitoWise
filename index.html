@@ -661,14 +661,13 @@ window.deleteMyGroup=async(code, me)=>{
 };
 
 // ── AUTH ──────────────────────────────────────────────────
-const AVATARS=['avatars/avatar1.png', 'avatars/avatar2.png', 'avatars/avatar3.png', 'avatars/avatar4.png', 'avatars/avatar5.png', 'avatars/avatar6.png', 'avatars/avatar7.png', 'avatars/avatar8.png', 'avatars/avatar9.png', 'avatars/avatar10.png'];
-const AVATAR_NAMES=["Gaviota estresada", "Tequilero", "Instaman", "Hombre empanada", "Almeja", "Cangrejo DJ", "Pez flotador", "Pi\u00f1a", "Tibur\u00f3n", "Ola enfadada"];
-
+const AVATARS=Array.from({length:28},(_,i)=>`avatars/avatar${i+1}.png`);
+const AVATAR_NAMES=['Cactus mexicano','Balón futbolero','Banana motorista','Dino pizzero','Gaviota whisky','Brócoli','Águila estresada','Tequilero','Instaman','Empanada toga','Cerebro listo','Abuelo indirecto','Chico cadena','El Jefe','Águila DJ','Patatas fritas','DJ nocturno','Chef italiano','Jefe 2','Piña playera','Pato millonario','Astronauta','Aguacate gym','Rey caca','Fantasma pizza','Instaman 2','Tequiman','Indirectas'];
 function renderAvatarGrid(gridId, selectedIndex=0){
   const grid=document.getElementById(gridId);
   grid.innerHTML=AVATARS.map((src,i)=>`
     <div class="avatar-opt ${i===selectedIndex?'selected':''}" onclick="selectAvatar('${gridId}',${i})">
-      <img src="${src}" alt="${AVATAR_NAMES[i]}">
+      <img src="${src}" alt="${AVATAR_NAMES[i]||'Avatar'}">
     </div>`).join('');
 }
 
@@ -696,7 +695,7 @@ window.goToAvatarStep=()=>{
   if(!code||!name){err.textContent='Completa todos los campos';err.style.display='block';return}
   err.style.display='none';
   document.getElementById('avatar-step-title').textContent=`Elige tu avatar, ${name}`;
-  renderAvatarGrid('join-avatar-grid',Math.floor(Math.random()*10));
+  renderAvatarGrid('join-avatar-grid',Math.floor(Math.random()*28));
   document.getElementById('join-form').style.display='none';
   document.getElementById('avatar-step').style.display='block';
 };
