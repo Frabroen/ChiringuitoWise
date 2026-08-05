@@ -32,9 +32,9 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 .tb-btn{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);color:white;width:36px;height:36px;border-radius:9px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;position:relative}
 .tb-btn:hover{background:rgba(255,255,255,0.25)}
 .notif-badge{position:absolute;top:-4px;right:-4px;width:16px;height:16px;background:#EF4444;border-radius:50%;font-size:9px;color:white;font-weight:700;display:none;align-items:center;justify-content:center}
-.tabs{display:flex;background:white;border-bottom:1px solid var(--border);flex-shrink:0;position:sticky;top:0;z-index:10}
-.tab{flex:1;padding:10px 4px 8px;font-size:11px;color:var(--text-mid);cursor:pointer;text-align:center;border-bottom:2.5px solid transparent;display:flex;flex-direction:column;align-items:center;gap:2px;transition:all 0.15s}
-.tab .ti{font-size:18px}
+.tabs{display:flex;background:white;border-bottom:1px solid var(--border);flex-shrink:0;position:sticky;top:0;z-index:10;overflow-x:auto}
+.tab{flex:1;padding:10px 4px 8px;font-size:10px;color:var(--text-mid);cursor:pointer;text-align:center;border-bottom:2.5px solid transparent;display:flex;flex-direction:column;align-items:center;gap:2px;transition:all 0.15s;min-width:56px}
+.tab .ti{font-size:17px}
 .tab.active{color:var(--sea-dark);border-bottom-color:var(--sea);font-weight:600}
 .content{flex:1;padding:1rem;display:flex;flex-direction:column;gap:12px;background:var(--bg)}
 .panel{display:none;flex-direction:column;gap:12px}
@@ -205,6 +205,23 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 .cycle-archive-date{font-size:11px;color:var(--text-light)}
 .cycle-archive-title{font-size:14px;font-weight:600;margin-top:2px}
 .cycle-archive-stats{font-size:12px;color:var(--text-mid);margin-top:4px}
+.mlp-trophy{font-size:56px;text-align:center;margin-bottom:8px}
+.mlp-leader-name{font-size:20px;font-weight:700;text-align:center;color:#92400E}
+.mlp-leader-score{font-size:14px;text-align:center;color:#B45309;margin-top:2px;font-weight:600}
+.mlp-title{font-size:12px;text-align:center;color:#B45309;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px}
+.mlp-vote-type{background:white;color:var(--text)}
+.mlp-vote-type.active-pos{background:#D1FAE5;border-color:#10B981;color:#065F46}
+.mlp-vote-type.active-neg{background:#FEE2E2;border-color:#EF4444;color:#991B1B}
+.mlp-rank-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(0,0,0,0.05)}
+.mlp-rank-item:last-child{border-bottom:none}
+.mlp-rank-medal{font-size:18px;width:24px;text-align:center}
+.mlp-rank-score{font-size:15px;font-weight:700}
+.mlp-rank-score.good{color:#10B981}
+.mlp-rank-score.bad{color:#DC2626}
+.mlp-rank-score.neutral{color:var(--text-light)}
+.mlp-vote-item{display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid rgba(0,0,0,0.05);font-size:13px}
+.mlp-vote-item:last-child{border-bottom:none}
+.mlp-vote-icon{font-size:16px}
 @media(max-width:400px){.stat-val{font-size:16px}.share-code{font-size:26px}}
 </style>
 </head>
@@ -260,6 +277,8 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
         <div class="avatar-grid" id="create-avatar-grid"></div>
         <label class="auth-label">Contraseña del grupo</label>
         <input class="auth-input" id="new-pass" type="password" placeholder="Mínimo 4 caracteres">
+        <label class="auth-label">Año del MLP</label>
+        <input class="auth-input" id="new-mlp-year" type="number" placeholder="2026" value="2026" style="font-family:monospace">
         <label class="auth-label">Moneda</label>
         <select class="curr-select" id="new-curr">
           <option value="EUR">€ Euro</option>
@@ -300,10 +319,11 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
   </div>
 
   <div class="tabs">
-    <div class="tab active" onclick="showPanel('oficina')"><span class="ti">😎</span>La Oficina</div>
+    <div class="tab active" onclick="showPanel('oficina')"><span class="ti">😎</span>Oficina</div>
     <div class="tab" onclick="showPanel('gastos')"><span class="ti">🍺</span>Gastos</div>
     <div class="tab" onclick="showPanel('balances')"><span class="ti">⚖️</span>Balances</div>
     <div class="tab" onclick="showPanel('saldar')"><span class="ti">🤝</span>Saldar</div>
+    <div class="tab" onclick="showPanel('mlp')"><span class="ti">🏆</span>MLP</div>
     <div class="tab" onclick="showPanel('share')"><span class="ti">🌴</span>Grupo</div>
   </div>
 
@@ -360,6 +380,35 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
       <div class="card">
         <div class="card-head"><span class="card-icon">🤝</span><span class="card-title">Cómo saldar las cuentas</span></div>
         <div id="settle-list"><div class="loading"><div class="spinner"></div></div></div>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-mlp">
+      <div class="card" style="background:linear-gradient(135deg,#FEF3C7,#FDE68A);border-color:#F59E0B">
+        <div class="mlp-title" id="mlp-title">MLP Costalita</div>
+        <div id="mlp-leader"><div class="loading"><div class="spinner"></div></div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><span class="card-icon">🗳️</span><span class="card-title">Votar MLP de hoy</span></div>
+        <p style="font-size:12px;color:var(--text-mid);margin-bottom:10px">Un voto por persona al día — puedes votarte a ti mismo. Vota positivo 👍 o negativo 👎 y explica el porqué.</p>
+        <select class="form-select" id="mlp-vote-target" style="margin-bottom:10px"></select>
+        <div style="display:flex;gap:8px;margin-bottom:10px">
+          <button class="chip mlp-vote-type" id="mlp-vote-pos" style="flex:1;padding:10px;font-size:14px" onclick="selectMlpVoteType('pos')">👍 Positivo</button>
+          <button class="chip mlp-vote-type" id="mlp-vote-neg" style="flex:1;padding:10px;font-size:14px" onclick="selectMlpVoteType('neg')">👎 Negativo</button>
+        </div>
+        <input class="form-input" id="mlp-vote-reason" placeholder="Motivo en pocas palabras..." maxlength="80" style="margin-bottom:10px">
+        <button class="btn-primary" style="width:100%" onclick="submitMlpVote()">🗳️ Votar</button>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><span class="card-icon">📊</span><span class="card-title">Ranking general</span></div>
+        <div id="mlp-ranking"><div class="loading"><div class="spinner"></div></div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><span class="card-icon">📅</span><span class="card-title">Votos de hoy</span></div>
+        <div id="mlp-today-votes"><div class="loading"><div class="spinner"></div></div></div>
       </div>
     </div>
 
@@ -617,9 +666,11 @@ function fmt(n){return sym()+parseFloat(n||0).toFixed(2)}
 function gcode(){const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';return Array.from({length:6},()=>c[Math.floor(Math.random()*c.length)]).join('')}
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800)}
 function fmtTime(ts){const d=new Date(ts);return d.toLocaleDateString('es',{day:'2-digit',month:'short'})+' · '+d.toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'})}
+function todayKey(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
 
 let state={code:null,me:null,group:null,unsubscribe:null,pendingDeleteId:null,pendingEditId:null,currentLocation:null,receiptB64:null,manualLocVisible:false};
 let pendingRemoveMember=null;
+let mlpSelectedType=null;
 
 function loadSession(){try{state.code=localStorage.getItem('cw_code');state.me=localStorage.getItem('cw_me')}catch(e){}}
 function saveSession(){try{localStorage.setItem('cw_code',state.code||'');localStorage.setItem('cw_me',state.me||'')}catch(e){}}
@@ -828,13 +879,14 @@ window.createGroup=async()=>{
   const uname=document.getElementById('new-uname').value.trim();
   const pass=document.getElementById('new-pass').value;
   const curr=document.getElementById('new-curr').value;
+  const mlpYear=document.getElementById('new-mlp-year').value.trim()||new Date().getFullYear().toString();
   const err=document.getElementById('create-err');
   if(!gname||!uname||pass.length<4){err.textContent='Completa todos los campos (contraseña mínimo 4 caracteres)';err.style.display='block';return}
   err.style.display='none';
   const code=gcode();
   const avatarIdx=getSelectedAvatar('create-avatar-grid');
   try{
-    await set(ref(db,`groups/${code}`),{name:gname,password:pass,currency:curr,members:{[uname]:{joined:Date.now(),avatar:avatarIdx}},created:serverTimestamp()});
+    await set(ref(db,`groups/${code}`),{name:gname,password:pass,currency:curr,mlpYear,members:{[uname]:{joined:Date.now(),avatar:avatarIdx}},created:serverTimestamp()});
     await push(ref(db,`groups/${code}/log`),{type:'create',who:uname,msg:`${uname} creó el chiringuito "${gname}"`,ts:Date.now()});
     state.code=code;state.me=uname;saveSession();
     saveGroupToHistory(code,gname,uname,avatarIdx);
@@ -912,6 +964,7 @@ function renderAll(){
   document.getElementById('brand-sub').textContent=`${g.name} · ${members.length} personas`;
   document.getElementById('share-code-disp').textContent=state.code;
   document.getElementById('curr-sel').value=g.currency||'EUR';
+  document.getElementById('mlp-title').textContent=`MLP Costalita ${g.mlpYear||new Date().getFullYear()}`;
   renderMembers(members);
   const expenses=Object.entries(g.expenses||{}).map(([id,e])=>({...e,id})).filter(e=>!e.cycleClosed);
   renderExpenses(expenses);
@@ -919,6 +972,7 @@ function renderAll(){
   renderBalances(net);renderSettle(net);renderStats(expenses,net);
   renderLog(g.log||{});
   renderCyclesArchive(g.cycles||{});
+  renderMlp();
   renderStatusBar();
   renderPandillaStatus();
   renderChat(g.chat||{});
@@ -1075,7 +1129,7 @@ function renderLog(logObj){
 }
 
 window.showPanel=(id)=>{
-  const ids=['oficina','gastos','balances','saldar','share'];
+  const ids=['oficina','gastos','balances','saldar','mlp','share'];
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',ids[i]===id));
   document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id===`panel-${id}`));
   if(id==='log'){
@@ -1483,6 +1537,138 @@ window.toggleSaldarInfo=()=>{
   text.style.display=isOpen?'none':'block';
   arrow.textContent=isOpen?'▼':'▲';
 };
+
+window.selectMlpVoteType=(type)=>{
+  mlpSelectedType=type;
+  document.getElementById('mlp-vote-pos').classList.toggle('active-pos', type==='pos');
+  document.getElementById('mlp-vote-neg').classList.toggle('active-neg', type==='neg');
+};
+
+function initMlpTargetSelect(){
+  const members=Object.keys(state.group?.members||{});
+  const sel=document.getElementById('mlp-vote-target');
+  if(!sel) return;
+  sel.innerHTML=members.map(m=>`<option value="${m}">${m}${m===state.me?' (yo)':''}</option>`).join('');
+}
+
+window.submitMlpVote=async()=>{
+  const target=document.getElementById('mlp-vote-target').value;
+  const reason=document.getElementById('mlp-vote-reason').value.trim();
+  if(!target){toast('⚠️ Elige a alguien');return}
+  if(!mlpSelectedType){toast('⚠️ Elige positivo o negativo');return}
+  if(!reason){toast('⚠️ Escribe un motivo corto');return}
+  const key=todayKey();
+  const voteId=`${key}_${state.me}`;
+  try{
+    const existingSnap=await get(ref(db,`groups/${state.code}/mlpVotes/${target}/${voteId}`));
+    if(existingSnap.exists()){
+      toast('⚠️ Ya has votado a esta persona hoy');
+      return;
+    }
+    const points=mlpSelectedType==='pos'?1:-1;
+    const voteTypeUsed=mlpSelectedType;
+    await set(ref(db,`groups/${state.code}/mlpVotes/${target}/${voteId}`),{
+      voter:state.me, points, reason, ts:Date.now(), date:key
+    });
+    await push(ref(db,`groups/${state.code}/log`),{
+      type:voteTypeUsed==='pos'?'add':'del',
+      who:state.me,
+      msg:`${state.me} votó ${voteTypeUsed==='pos'?'👍':'👎'} a ${target} en el MLP: "${reason}"`,
+      ts:Date.now()
+    });
+    document.getElementById('mlp-vote-reason').value='';
+    mlpSelectedType=null;
+    document.getElementById('mlp-vote-pos').classList.remove('active-pos');
+    document.getElementById('mlp-vote-neg').classList.remove('active-neg');
+    toast(voteTypeUsed==='pos'?'👍 Voto registrado':'🏆 Voto registrado');
+  }catch(e){toast('❌ Error al votar')}
+};
+
+function calcMlpScores(mlpVotesObj){
+  const scores={};
+  Object.entries(mlpVotesObj||{}).forEach(([person,votes])=>{
+    let total=0;
+    Object.values(votes||{}).forEach(v=>{ total+=v.points||0; });
+    scores[person]=Math.max(-10,Math.min(10,total));
+  });
+  return scores;
+}
+
+function renderMlpLeader(mlpVotesObj, members){
+  const el=document.getElementById('mlp-leader');
+  if(!el) return;
+  const scores=calcMlpScores(mlpVotesObj);
+  members.forEach(m=>{ if(!(m in scores)) scores[m]=0; });
+  const entries=Object.entries(scores);
+  if(!entries.length || entries.every(([,s])=>s===0)){
+    el.innerHTML=`<div class="empty" style="padding:1rem"><div class="big">🏆</div><p>Nadie ha sido votado todavía<br>¡El chiringuito está en paz!</p></div>`;
+    return;
+  }
+  const [worstName, worstScore]=entries.sort((a,b)=>a[1]-b[1])[0];
+  if(worstScore>=0){
+    el.innerHTML=`<div class="empty" style="padding:1rem"><div class="big">😇</div><p>Todo el mundo se porta bien<br>¡No hay MLP hoy!</p></div>`;
+    return;
+  }
+  el.innerHTML=`
+    <div class="mlp-trophy">🏆</div>
+    <div class="mlp-leader-name">${worstName}</div>
+    <div class="mlp-leader-score">Puntuación: ${worstScore} / -10</div>
+  `;
+}
+
+function renderMlpRanking(mlpVotesObj, members){
+  const el=document.getElementById('mlp-ranking');
+  if(!el) return;
+  const scores=calcMlpScores(mlpVotesObj);
+  members.forEach(m=>{ if(!(m in scores)) scores[m]=0; });
+  const entries=Object.entries(scores).sort((a,b)=>a[1]-b[1]);
+  const medals=['🥇','🥈','🥉'];
+  el.innerHTML=entries.map(([nm,score],i)=>{
+    const cls=score<0?'bad':score>0?'good':'neutral';
+    const medal=score<0 && i<3?medals[i]:'👤';
+    return`<div class="mlp-rank-item">
+      <span class="mlp-rank-medal">${medal}</span>
+      <div class="avatar" style="width:32px;height:32px;font-size:11px;background:${getMemberBg(nm)};overflow:hidden">${getMemberAvatar(nm)}</div>
+      <div style="flex:1;font-size:14px;font-weight:500">${nm}${nm===state.me?' 🌟':''}</div>
+      <div class="mlp-rank-score ${cls}">${score>0?'+':''}${score}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderMlpTodayVotes(mlpVotesObj){
+  const el=document.getElementById('mlp-today-votes');
+  if(!el) return;
+  const key=todayKey();
+  const todayVotes=[];
+  Object.entries(mlpVotesObj||{}).forEach(([person,votes])=>{
+    Object.values(votes||{}).forEach(v=>{
+      if(v.date===key) todayVotes.push({...v, person});
+    });
+  });
+  todayVotes.sort((a,b)=>b.ts-a.ts);
+  if(!todayVotes.length){
+    el.innerHTML=`<div class="empty" style="padding:1rem"><div class="big">📅</div><p>Nadie ha votado hoy todavía</p></div>`;
+    return;
+  }
+  el.innerHTML=todayVotes.map(v=>`
+    <div class="mlp-vote-item">
+      <span class="mlp-vote-icon">${v.points>0?'👍':'👎'}</span>
+      <div style="flex:1">
+        <div><strong>${v.voter}</strong> votó a <strong>${v.person}</strong></div>
+        <div style="color:var(--text-light);font-size:12px">"${v.reason}"</div>
+      </div>
+    </div>`).join('');
+}
+
+function renderMlp(){
+  const g=state.group;
+  if(!g) return;
+  const members=Object.keys(g.members||{});
+  initMlpTargetSelect();
+  renderMlpLeader(g.mlpVotes||{}, members);
+  renderMlpRanking(g.mlpVotes||{}, members);
+  renderMlpTodayVotes(g.mlpVotes||{});
+}
 
 window.copyCode=()=>{if(navigator.clipboard)navigator.clipboard.writeText(state.code).then(()=>toast('📋 Código copiado: '+state.code))};
 window.changeCurr=async(val)=>{try{await update(ref(db,`groups/${state.code}`),{currency:val});toast('💱 Moneda actualizada')}catch(e){toast('❌ Error')}};
