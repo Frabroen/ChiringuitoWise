@@ -222,6 +222,29 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 .mlp-vote-item{display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid rgba(0,0,0,0.05);font-size:13px}
 .mlp-vote-item:last-child{border-bottom:none}
 .mlp-vote-icon{font-size:16px}
+.mlp-podium{display:flex;align-items:flex-end;justify-content:center;gap:10px;padding:8px 0 0}
+.mlp-podium-spot{display:flex;flex-direction:column;align-items:center;gap:4px}
+.mlp-podium-medal{font-size:22px}
+.mlp-podium-avatar{width:56px;height:56px;border-radius:50%;overflow:hidden;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.15)}
+.mlp-podium-spot.first .mlp-podium-avatar{width:72px;height:72px}
+.mlp-podium-name{font-size:12px;font-weight:600;color:#78350F;text-align:center;max-width:76px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mlp-podium-score{font-size:13px;font-weight:700;color:#DC2626}
+.mlp-podium-bar{width:64px;border-radius:8px 8px 0 0;margin-top:4px}
+.mlp-podium-spot.first .mlp-podium-bar{height:56px;background:#FCD34D}
+.mlp-podium-spot.second .mlp-podium-bar{height:38px;background:#E2E8F0}
+.mlp-podium-spot.third .mlp-podium-bar{height:26px;background:#FDBA74}
+.mlp-score-chip{padding:9px 4px;border:1.5px solid rgba(0,0,0,0.1);border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;text-align:center;background:white;color:var(--text);transition:all 0.15s}
+.mlp-score-chip.sel{border-color:#DC2626;background:#FEE2E2;color:#991B1B}
+.mlp-vote-row{padding:10px 0;border-bottom:1px solid rgba(0,0,0,0.05)}
+.mlp-vote-row:last-child{border-bottom:none}
+.mlp-vote-row-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.mlp-vote-row-name{flex:1;font-size:14px;font-weight:500}
+.mlp-vote-scores{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin-bottom:6px}
+.mlp-vote-score-btn{padding:7px 2px;border:1.5px solid rgba(0,0,0,0.1);border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;text-align:center;background:white;color:var(--text-light)}
+.mlp-vote-score-btn.sel{border-color:#DC2626;background:#FEE2E2;color:#991B1B}
+.mlp-vote-reason-input{width:100%;padding:7px 10px;border:1.5px solid rgba(0,0,0,0.12);border-radius:8px;font-size:12px;outline:none;font-family:inherit;background:white;color:var(--text);display:none}
+.mlp-vote-reason-input.show{display:block}
+.mlp-day-winner{background:#FEF3C7;border-radius:8px;padding:8px 10px;font-size:12px;color:#92400E;font-weight:600;margin-bottom:10px;text-align:center}
 @media(max-width:400px){.stat-val{font-size:16px}.share-code{font-size:26px}}
 </style>
 </head>
@@ -381,24 +404,35 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
         <div class="card-head"><span class="card-icon">🤝</span><span class="card-title">Cómo saldar las cuentas</span></div>
         <div id="settle-list"><div class="loading"><div class="spinner"></div></div></div>
       </div>
+      <div class="card">
+        <div class="card-head"><span class="card-icon">🔄</span><span class="card-title">Cerrar ciclo de gastos</span></div>
+        <p style="font-size:12px;color:var(--text-mid);line-height:1.5;margin-bottom:10px">
+          Si alguien se va y entra gente nueva, puedes cerrar el ciclo actual. Los gastos de ahora quedan congelados en el historial y los balances se ponen a cero para empezar de nuevo.
+        </p>
+        <button class="copy-btn" style="background:#FEF3C7;color:#92400E;border-color:#F59E0B" onclick="openCloseCycleModal()">🔄 Cerrar ciclo actual</button>
+      </div>
+      <div class="card" id="cycles-archive-card" style="display:none">
+        <div class="card-head"><span class="card-icon">📦</span><span class="card-title">Ciclos anteriores</span></div>
+        <div id="cycles-archive-list"></div>
+      </div>
     </div>
 
     <div class="panel" id="panel-mlp">
       <div class="card" style="background:linear-gradient(135deg,#FEF3C7,#FDE68A);border-color:#F59E0B">
         <div class="mlp-title" id="mlp-title">MLP Costalita</div>
-        <div id="mlp-leader"><div class="loading"><div class="spinner"></div></div></div>
+        <div id="mlp-podium"><div class="loading"><div class="spinner"></div></div></div>
       </div>
 
       <div class="card">
-        <div class="card-head"><span class="card-icon">🗳️</span><span class="card-title">Votar MLP de hoy</span></div>
-        <p style="font-size:12px;color:var(--text-mid);margin-bottom:10px">Un voto por persona al día — puedes votarte a ti mismo. Vota positivo 👍 o negativo 👎 y explica el porqué.</p>
-        <select class="form-select" id="mlp-vote-target" style="margin-bottom:10px"></select>
-        <div style="display:flex;gap:8px;margin-bottom:10px">
-          <button class="chip mlp-vote-type" id="mlp-vote-pos" style="flex:1;padding:10px;font-size:14px" onclick="selectMlpVoteType('pos')">👍 Positivo</button>
-          <button class="chip mlp-vote-type" id="mlp-vote-neg" style="flex:1;padding:10px;font-size:14px" onclick="selectMlpVoteType('neg')">👎 Negativo</button>
+        <div class="card-head" style="margin-bottom:8px">
+          <span class="card-icon">🗳️</span><span class="card-title" style="flex:1">Votar MLP</span>
+          <button class="tb-btn" style="width:28px;height:28px;background:var(--foam);border-color:var(--sea);color:var(--sea-dark)" onclick="mlpChangeDay(-1)">◀</button>
+          <span id="mlp-vote-date-label" style="font-size:12px;font-weight:600;color:var(--text-mid);min-width:74px;text-align:center"></span>
+          <button class="tb-btn" style="width:28px;height:28px;background:var(--foam);border-color:var(--sea);color:var(--sea-dark)" onclick="mlpChangeDay(1)" id="mlp-next-day-btn">▶</button>
         </div>
-        <input class="form-input" id="mlp-vote-reason" placeholder="Motivo en pocas palabras..." maxlength="80" style="margin-bottom:10px">
-        <button class="btn-primary" style="width:100%" onclick="submitMlpVote()">🗳️ Votar</button>
+        <p style="font-size:12px;color:var(--text-mid);margin-bottom:10px">Puntúa de 0 a -5 a cada persona por ese día — incluido a ti mismo. Puedes revisar y cambiar tus votos de días anteriores.</p>
+        <div id="mlp-vote-table"><div class="loading"><div class="spinner"></div></div></div>
+        <button class="btn-primary" style="width:100%;margin-top:10px" onclick="submitMlpVotes()">🗳️ Guardar votos</button>
       </div>
 
       <div class="card">
@@ -407,9 +441,10 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
       </div>
 
       <div class="card">
-        <div class="card-head"><span class="card-icon">📅</span><span class="card-title">Votos de hoy</span></div>
+        <div class="card-head"><span class="card-icon">📅</span><span class="card-title" id="mlp-day-votes-title">Votos de hoy</span></div>
         <div id="mlp-today-votes"><div class="loading"><div class="spinner"></div></div></div>
       </div>
+
     </div>
 
     <div class="panel" id="panel-share">
@@ -427,17 +462,6 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
         <div id="members-list"><div class="loading"><div class="spinner"></div></div></div>
         <button class="copy-btn" style="margin-top:10px;background:var(--foam);color:var(--sea-dark);border-color:var(--sea)" onclick="openChangeAvatarModal()">🎭 Cambiar mi avatar</button>
         <button class="copy-btn" style="margin-top:8px;background:var(--foam);color:var(--sea-dark);border-color:var(--sea)" onclick="openChangeNameModal()">✏️ Cambiar mi nombre</button>
-      </div>
-      <div class="card">
-        <div class="card-head"><span class="card-icon">🔄</span><span class="card-title">Cerrar ciclo de gastos</span></div>
-        <p style="font-size:12px;color:var(--text-mid);line-height:1.5;margin-bottom:10px">
-          Si alguien se va y entra gente nueva, puedes cerrar el ciclo actual. Los gastos de ahora quedan congelados en el historial y los balances se ponen a cero para empezar de nuevo.
-        </p>
-        <button class="copy-btn" style="background:#FEF3C7;color:#92400E;border-color:#F59E0B" onclick="openCloseCycleModal()">🔄 Cerrar ciclo actual</button>
-      </div>
-      <div class="card" id="cycles-archive-card" style="display:none">
-        <div class="card-head"><span class="card-icon">📦</span><span class="card-title">Ciclos anteriores</span></div>
-        <div id="cycles-archive-list"></div>
       </div>
       <div class="card">
         <div class="card-head"><span class="card-icon">⚙️</span><span class="card-title">Ajustes</span></div>
@@ -687,7 +711,6 @@ function todayKey(){const d=new Date();return `${d.getFullYear()}-${String(d.get
 
 let state={code:null,me:null,group:null,unsubscribe:null,pendingDeleteId:null,pendingEditId:null,currentLocation:null,receiptB64:null,manualLocVisible:false};
 let pendingRemoveMember=null;
-let mlpSelectedType=null;
 
 function loadSession(){try{state.code=localStorage.getItem('cw_code');state.me=localStorage.getItem('cw_me')}catch(e){}}
 function saveSession(){try{localStorage.setItem('cw_code',state.code||'');localStorage.setItem('cw_me',state.me||'')}catch(e){}}
@@ -989,6 +1012,7 @@ function renderAll(){
   renderBalances(net);renderSettle(net);renderStats(expenses,net);
   renderLog(g.log||{});
   renderCyclesArchive(g.cycles||{});
+  migrateMlpPositiveVotes(g.mlpVotes||{});
   renderMlp();
   renderStatusBar();
   renderPandillaStatus();
@@ -997,6 +1021,26 @@ function renderAll(){
   const seen=parseInt(localStorage.getItem('cw_log_seen')||'0');
   if(total>seen) document.getElementById('notif-badge').style.display='flex';
 }
+
+let mlpMigrationDone=false;
+async function migrateMlpPositiveVotes(mlpVotesObj){
+  if(mlpMigrationDone) return;
+  mlpMigrationDone=true;
+  const updates={};
+  let found=false;
+  Object.entries(mlpVotesObj||{}).forEach(([person,votes])=>{
+    Object.entries(votes||{}).forEach(([voteId,v])=>{
+      if(v.points>0){
+        updates[`mlpVotes/${person}/${voteId}/points`]=-4;
+        found=true;
+      }
+    });
+  });
+  if(found){
+    try{ await update(ref(db,`groups/${state.code}`),updates); }catch(e){}
+  }
+}
+
 
 function getMemberAvatar(name){
   const memberData=state.group?.members?.[name];
@@ -1618,49 +1662,124 @@ window.toggleSaldarInfo=()=>{
   arrow.textContent=isOpen?'▼':'▲';
 };
 
-window.selectMlpVoteType=(type)=>{
-  mlpSelectedType=type;
-  document.getElementById('mlp-vote-pos').classList.toggle('active-pos', type==='pos');
-  document.getElementById('mlp-vote-neg').classList.toggle('active-neg', type==='neg');
-};
+let mlpViewDate=todayKey();
+let mlpDraftVotes={}; // {personName: {score, reason}} for the day being viewed, unsaved edits
 
-function initMlpTargetSelect(){
-  const members=Object.keys(state.group?.members||{});
-  const sel=document.getElementById('mlp-vote-target');
-  if(!sel) return;
-  sel.innerHTML=members.map(m=>`<option value="${m}">${m}${m===state.me?' (yo)':''}</option>`).join('');
+function dateKeyOffset(key, offsetDays){
+  const [y,m,d]=key.split('-').map(Number);
+  const dt=new Date(y, m-1, d);
+  dt.setDate(dt.getDate()+offsetDays);
+  return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
 }
 
-window.submitMlpVote=async()=>{
-  const target=document.getElementById('mlp-vote-target').value;
-  const reason=document.getElementById('mlp-vote-reason').value.trim();
-  if(!target){toast('⚠️ Elige a alguien');return}
-  if(!mlpSelectedType){toast('⚠️ Elige positivo o negativo');return}
-  if(!reason){toast('⚠️ Escribe un motivo corto');return}
-  const key=todayKey();
-  const voteId=`${key}_${state.me}`;
-  try{
-    const existingSnap=await get(ref(db,`groups/${state.code}/mlpVotes/${target}/${voteId}`));
-    if(existingSnap.exists()){
-      toast('⚠️ Ya has votado a esta persona hoy');
-      return;
-    }
-    const points=mlpSelectedType==='pos'?1:-1;
-    const voteTypeUsed=mlpSelectedType;
-    await set(ref(db,`groups/${state.code}/mlpVotes/${target}/${voteId}`),{
-      voter:state.me, points, reason, ts:Date.now(), date:key
+function fmtMlpDateLabel(key){
+  if(key===todayKey()) return 'Hoy';
+  if(key===dateKeyOffset(todayKey(),-1)) return 'Ayer';
+  const [y,m,d]=key.split('-').map(Number);
+  const dt=new Date(y,m-1,d);
+  return dt.toLocaleDateString('es',{day:'2-digit',month:'short'});
+}
+
+window.mlpChangeDay=(delta)=>{
+  const newKey=dateKeyOffset(mlpViewDate, delta);
+  if(newKey>todayKey()) return;
+  mlpViewDate=newKey;
+  mlpDraftVotes={};
+  renderMlpVoteTable();
+  renderMlpDayVotes();
+};
+
+function getMyVotesForDay(mlpVotesObj, dateKey){
+  const mine={};
+  Object.entries(mlpVotesObj||{}).forEach(([person,votes])=>{
+    Object.values(votes||{}).forEach(v=>{
+      if(v.date===dateKey && v.voter===state.me) mine[person]={score:v.points, reason:v.reason};
     });
+  });
+  return mine;
+}
+
+function renderMlpVoteTable(){
+  const tableEl=document.getElementById('mlp-vote-table');
+  const dateLabel=document.getElementById('mlp-vote-date-label');
+  const nextBtn=document.getElementById('mlp-next-day-btn');
+  if(!tableEl) return;
+  dateLabel.textContent=fmtMlpDateLabel(mlpViewDate);
+  nextBtn.style.opacity=mlpViewDate>=todayKey()?'0.3':'1';
+  nextBtn.style.pointerEvents=mlpViewDate>=todayKey()?'none':'auto';
+
+  const members=Object.keys(state.group?.members||{});
+  const existing=getMyVotesForDay(state.group?.mlpVotes||{}, mlpViewDate);
+  mlpDraftVotes={...existing};
+
+  const scores=[0,-1,-2,-3,-4,-5];
+  tableEl.innerHTML=members.map(m=>{
+    const current=mlpDraftVotes[m];
+    return`<div class="mlp-vote-row">
+      <div class="mlp-vote-row-head">
+        <div class="avatar" style="width:28px;height:28px;font-size:10px;background:${getMemberBg(m)};overflow:hidden">${getMemberAvatar(m)}</div>
+        <div class="mlp-vote-row-name">${m}${m===state.me?' (yo)':''}</div>
+      </div>
+      <div class="mlp-vote-scores" id="mlp-scores-${cssSafe(m)}">
+        ${scores.map(s=>`<div class="mlp-vote-score-btn ${current&&current.score===s?'sel':''}" onclick="mlpSetScore('${m.replace(/'/g,"\\'")}',${s})">${s}</div>`).join('')}
+      </div>
+      <input class="mlp-vote-reason-input ${current&&current.score<0?'show':''}" id="mlp-reason-${cssSafe(m)}" placeholder="Motivo..." maxlength="80" value="${current?.reason||''}" oninput="mlpSetReason('${m.replace(/'/g,"\\'")}',this.value)">
+    </div>`;
+  }).join('');
+}
+
+function cssSafe(name){
+  return name.replace(/[^a-zA-Z0-9]/g,'_');
+}
+
+window.mlpSetScore=(person, score)=>{
+  if(!mlpDraftVotes[person]) mlpDraftVotes[person]={score:0,reason:''};
+  mlpDraftVotes[person].score=score;
+  const scoresEl=document.getElementById(`mlp-scores-${cssSafe(person)}`);
+  if(scoresEl){
+    [...scoresEl.children].forEach((btn,i)=>{
+      btn.classList.toggle('sel', [0,-1,-2,-3,-4,-5][i]===score);
+    });
+  }
+  const reasonEl=document.getElementById(`mlp-reason-${cssSafe(person)}`);
+  if(reasonEl) reasonEl.classList.toggle('show', score<0);
+  if(score===0){ delete mlpDraftVotes[person]; }
+};
+
+window.mlpSetReason=(person, value)=>{
+  if(!mlpDraftVotes[person]) mlpDraftVotes[person]={score:0,reason:''};
+  mlpDraftVotes[person].reason=value;
+};
+
+window.submitMlpVotes=async()=>{
+  const entries=Object.entries(mlpDraftVotes).filter(([,v])=>v.score<0);
+  const missingReason=entries.find(([,v])=>!v.reason || !v.reason.trim());
+  if(missingReason){toast(`⚠️ Falta el motivo para ${missingReason[0]}`);return}
+  if(!entries.length){toast('⚠️ Pon al menos una puntuación negativa');return}
+  try{
+    const updates={};
+    entries.forEach(([person,v])=>{
+      const voteId=`${mlpViewDate}_${state.me}`;
+      updates[`mlpVotes/${person}/${voteId}`]={
+        voter:state.me, points:v.score, reason:v.reason.trim(), ts:Date.now(), date:mlpViewDate
+      };
+    });
+    // Remove votes for people set back to 0 that existed before
+    const existing=getMyVotesForDay(state.group?.mlpVotes||{}, mlpViewDate);
+    Object.keys(existing).forEach(person=>{
+      if(!mlpDraftVotes[person] || mlpDraftVotes[person].score===0){
+        const voteId=`${mlpViewDate}_${state.me}`;
+        updates[`mlpVotes/${person}/${voteId}`]=null;
+      }
+    });
+    await update(ref(db,`groups/${state.code}`),updates);
     await push(ref(db,`groups/${state.code}/log`),{
-      type:voteTypeUsed==='pos'?'add':'del',
+      type:'del',
       who:state.me,
-      msg:`${state.me} votó ${voteTypeUsed==='pos'?'👍':'👎'} a ${target} en el MLP: "${reason}"`,
+      msg:`${state.me} votó en el MLP del ${fmtMlpDateLabel(mlpViewDate)} (${entries.length} persona${entries.length>1?'s':''})`,
       ts:Date.now()
     });
-    document.getElementById('mlp-vote-reason').value='';
-    mlpSelectedType=null;
-    document.getElementById('mlp-vote-pos').classList.remove('active-pos');
-    document.getElementById('mlp-vote-neg').classList.remove('active-neg');
-    toast(voteTypeUsed==='pos'?'👍 Voto registrado':'🏆 Voto registrado');
+    toast('🏆 Votos guardados');
   }catch(e){toast('❌ Error al votar')}
 };
 
@@ -1669,31 +1788,42 @@ function calcMlpScores(mlpVotesObj){
   Object.entries(mlpVotesObj||{}).forEach(([person,votes])=>{
     let total=0;
     Object.values(votes||{}).forEach(v=>{ total+=v.points||0; });
-    scores[person]=Math.max(-10,Math.min(10,total));
+    scores[person]=total;
   });
   return scores;
 }
 
-function renderMlpLeader(mlpVotesObj, members){
-  const el=document.getElementById('mlp-leader');
+function renderMlpPodium(mlpVotesObj, members){
+  const el=document.getElementById('mlp-podium');
   if(!el) return;
   const scores=calcMlpScores(mlpVotesObj);
   members.forEach(m=>{ if(!(m in scores)) scores[m]=0; });
-  const entries=Object.entries(scores);
-  if(!entries.length || entries.every(([,s])=>s===0)){
-    el.innerHTML=`<div class="empty" style="padding:1rem"><div class="big">🏆</div><p>Nadie ha sido votado todavía<br>¡El chiringuito está en paz!</p></div>`;
-    return;
-  }
-  const [worstName, worstScore]=entries.sort((a,b)=>a[1]-b[1])[0];
-  if(worstScore>=0){
+  const ranked=Object.entries(scores).filter(([,s])=>s<0).sort((a,b)=>a[1]-b[1]);
+  if(!ranked.length){
     el.innerHTML=`<div class="empty" style="padding:1rem"><div class="big">😇</div><p>Todo el mundo se porta bien<br>¡No hay MLP hoy!</p></div>`;
     return;
   }
-  el.innerHTML=`
-    <div class="mlp-trophy">🏆</div>
-    <div class="mlp-leader-name">${worstName}</div>
-    <div class="mlp-leader-score">Puntuación: ${worstScore} / -10</div>
-  `;
+  const top3=ranked.slice(0,3);
+  const medals=['🥇','🥈','🥉'];
+  const order=top3.length===3?[1,0,2]:top3.length===2?[1,0]:[0];
+  el.innerHTML=`<div class="mlp-podium">
+    ${order.map((idx)=>{
+      if(idx>=top3.length) return '';
+      const [nm,score]=top3[idx];
+      const cls=idx===0?'first':idx===1?'second':'third';
+      return`<div class="mlp-podium-spot ${cls}">
+        <span class="mlp-podium-medal">${medals[idx]}</span>
+        <div class="mlp-podium-avatar" style="background:${getMemberBg(nm)}">${getMemberAvatar(nm)}</div>
+        <div class="mlp-podium-name">${nm}</div>
+        <div class="mlp-podium-score">${score}</div>
+        <div class="mlp-podium-bar"></div>
+      </div>`;
+    }).join('')}
+  </div>
+  <div style="text-align:center;margin-top:6px">
+    <span style="font-size:36px">🏆</span>
+    <div class="mlp-leader-name">${top3[0][0]} es el MLP</div>
+  </div>`;
 }
 
 function renderMlpRanking(mlpVotesObj, members){
@@ -1704,37 +1834,46 @@ function renderMlpRanking(mlpVotesObj, members){
   const entries=Object.entries(scores).sort((a,b)=>a[1]-b[1]);
   const medals=['🥇','🥈','🥉'];
   el.innerHTML=entries.map(([nm,score],i)=>{
-    const cls=score<0?'bad':score>0?'good':'neutral';
+    const cls=score<0?'bad':'neutral';
     const medal=score<0 && i<3?medals[i]:'👤';
     return`<div class="mlp-rank-item">
       <span class="mlp-rank-medal">${medal}</span>
       <div class="avatar" style="width:32px;height:32px;font-size:11px;background:${getMemberBg(nm)};overflow:hidden">${getMemberAvatar(nm)}</div>
       <div style="flex:1;font-size:14px;font-weight:500">${nm}${nm===state.me?' 🌟':''}</div>
-      <div class="mlp-rank-score ${cls}">${score>0?'+':''}${score}</div>
+      <div class="mlp-rank-score ${cls}">${score}</div>
     </div>`;
   }).join('');
 }
 
-function renderMlpTodayVotes(mlpVotesObj){
+function renderMlpDayVotes(){
   const el=document.getElementById('mlp-today-votes');
+  const titleEl=document.getElementById('mlp-day-votes-title');
   if(!el) return;
-  const key=todayKey();
-  const todayVotes=[];
+  const mlpVotesObj=state.group?.mlpVotes||{};
+  titleEl.textContent=`Votos del ${fmtMlpDateLabel(mlpViewDate)}`;
+  const dayVotes=[];
   Object.entries(mlpVotesObj||{}).forEach(([person,votes])=>{
     Object.values(votes||{}).forEach(v=>{
-      if(v.date===key) todayVotes.push({...v, person});
+      if(v.date===mlpViewDate) dayVotes.push({...v, person});
     });
   });
-  todayVotes.sort((a,b)=>b.ts-a.ts);
-  if(!todayVotes.length){
-    el.innerHTML=`<div class="empty" style="padding:1rem"><div class="big">📅</div><p>Nadie ha votado hoy todavía</p></div>`;
+  dayVotes.sort((a,b)=>b.ts-a.ts);
+  if(!dayVotes.length){
+    el.innerHTML=`<div class="empty" style="padding:1rem"><div class="big">📅</div><p>Nadie ha votado este día todavía</p></div>`;
     return;
   }
-  el.innerHTML=todayVotes.map(v=>`
+  // Determine day winner
+  const dayScores={};
+  dayVotes.forEach(v=>{ dayScores[v.person]=(dayScores[v.person]||0)+v.points; });
+  const dayWinner=Object.entries(dayScores).sort((a,b)=>a[1]-b[1])[0];
+  const winnerHtml = dayWinner && dayWinner[1]<0
+    ? `<div class="mlp-day-winner">🏆 MLP del día: ${dayWinner[0]} (${dayWinner[1]})</div>`
+    : '';
+  el.innerHTML = winnerHtml + dayVotes.map(v=>`
     <div class="mlp-vote-item">
-      <span class="mlp-vote-icon">${v.points>0?'👍':'👎'}</span>
+      <span class="mlp-vote-icon">👎</span>
       <div style="flex:1">
-        <div><strong>${v.voter}</strong> votó a <strong>${v.person}</strong></div>
+        <div><strong>${v.voter}</strong> votó <strong>${v.points}</strong> a <strong>${v.person}</strong></div>
         <div style="color:var(--text-light);font-size:12px">"${v.reason}"</div>
       </div>
     </div>`).join('');
@@ -1744,11 +1883,12 @@ function renderMlp(){
   const g=state.group;
   if(!g) return;
   const members=Object.keys(g.members||{});
-  initMlpTargetSelect();
-  renderMlpLeader(g.mlpVotes||{}, members);
+  renderMlpVoteTable();
+  renderMlpPodium(g.mlpVotes||{}, members);
   renderMlpRanking(g.mlpVotes||{}, members);
-  renderMlpTodayVotes(g.mlpVotes||{});
+  renderMlpDayVotes();
 }
+
 
 window.copyCode=()=>{if(navigator.clipboard)navigator.clipboard.writeText(state.code).then(()=>toast('📋 Código copiado: '+state.code))};
 window.changeCurr=async(val)=>{try{await update(ref(db,`groups/${state.code}`),{currency:val});toast('💱 Moneda actualizada')}catch(e){toast('❌ Error')}};
