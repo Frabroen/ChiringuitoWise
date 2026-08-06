@@ -426,6 +426,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
         <div class="card-head"><span class="card-icon">👥</span><span class="card-title">La pandilla</span></div>
         <div id="members-list"><div class="loading"><div class="spinner"></div></div></div>
         <button class="copy-btn" style="margin-top:10px;background:var(--foam);color:var(--sea-dark);border-color:var(--sea)" onclick="openChangeAvatarModal()">🎭 Cambiar mi avatar</button>
+        <button class="copy-btn" style="margin-top:8px;background:var(--foam);color:var(--sea-dark);border-color:var(--sea)" onclick="openChangeNameModal()">✏️ Cambiar mi nombre</button>
       </div>
       <div class="card">
         <div class="card-head"><span class="card-icon">🔄</span><span class="card-title">Cerrar ciclo de gastos</span></div>
@@ -564,6 +565,22 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
     <div class="modal-btns">
       <button class="btn-secondary" onclick="closeEditModal()">Cancelar</button>
       <button class="btn-primary" onclick="saveEdit()">✏️ Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="name-change-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">✏️ Cambiar mi nombre</div>
+    <p style="font-size:13px;color:var(--text-mid);margin-bottom:1rem">Este cambio se aplicará a todos tus gastos, votos y mensajes anteriores en este grupo</p>
+    <div class="form-row">
+      <label class="form-label">Nuevo nombre</label>
+      <input class="form-input" id="new-name-input" placeholder="Tu nombre">
+    </div>
+    <div class="modal-btns">
+      <button class="btn-secondary" onclick="closeChangeNameModal()">Cancelar</button>
+      <button class="btn-primary" onclick="saveChangedName()">✏️ Guardar nombre</button>
     </div>
   </div>
 </div>
@@ -1397,6 +1414,69 @@ window.saveChangedAvatar=async()=>{
   }catch(e){toast('❌ Error al guardar el avatar')}
 };
 
+window.openChangeNameModal=()=>{
+  document.getElementById('new-name-input').value=state.me;
+  document.getElementById('name-change-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('new-name-input').focus(),100);
+};
+
+window.closeChangeNameModal=()=>{
+  document.getElementById('name-change-modal').classList.remove('open');
+};
+
+window.saveChangedName=async()=>{
+  const newName=document.getElementById('new-name-input').value.trim();
+  const oldName=state.me;
+  if(!newName){toast('⚠️ Escribe un nombre');return}
+  if(newName===oldName){closeChangeNameModal();return}
+  const members=Object.keys(state.group?.members||{});
+  if(members.includes(newName)){toast('⚠️ Ya existe alguien con ese nombre');return}
+  try{
+    const memberData=state.group?.members?.[oldName]||{};
+    await set(ref(db,`groups/${state.code}/members/${newName}`),memberData);
+    await remove(ref(db,`groups/${state.code}/members/${oldName}`));
+
+    const updates={};
+    Object.entries(state.group?.expenses||{}).forEach(([id,e])=>{
+      if(e.payer===oldName) updates[`expenses/${id}/payer`]=newName;
+      if((e.splitAmong||[]).includes(oldName)){
+        const newSplit=e.splitAmong.map(n=>n===oldName?newName:n);
+        updates[`expenses/${id}/splitAmong`]=newSplit;
+      }
+    });
+    Object.entries(state.group?.chat||{}).forEach(([id,m])=>{
+      if(m.who===oldName) updates[`chat/${id}/who`]=newName;
+    });
+    Object.entries(state.group?.mlpVotes||{}).forEach(([person,votes])=>{
+      Object.entries(votes||{}).forEach(([vid,v])=>{
+        if(v.voter===oldName) updates[`mlpVotes/${person}/${vid}/voter`]=newName;
+      });
+      if(person===oldName){
+        Object.entries(votes||{}).forEach(([vid,v])=>{
+          updates[`mlpVotes/${newName}/${vid}`]=v;
+        });
+        updates[`mlpVotes/${oldName}`]=null;
+      }
+    });
+    if(Object.keys(updates).length) await update(ref(db,`groups/${state.code}`),updates);
+
+    await push(ref(db,`groups/${state.code}/log`),{
+      type:'add',who:newName,
+      msg:`${oldName} cambió su nombre a ${newName}`,
+      ts:Date.now()
+    });
+
+    state.me=newName;
+    saveSession();
+    const groups=getSavedGroups();
+    const g=groups.find(x=>x.code===state.code&&x.me===oldName);
+    if(g){ g.me=newName; localStorage.setItem('cw_groups', JSON.stringify(groups)); }
+
+    closeChangeNameModal();
+    toast('✏️ ¡Nombre actualizado!');
+  }catch(e){toast('❌ Error al cambiar el nombre')}
+};
+
 window.openCloseCycleModal=()=>{
   const g=state.group;
   const expenses=Object.entries(g?.expenses||{}).map(([id,e])=>({...e,id})).filter(e=>!e.cycleClosed&&!e.settle);
@@ -1677,6 +1757,7 @@ document.getElementById('edit-modal').addEventListener('click',e=>{if(e.target==
 document.getElementById('expense-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal()});
 document.getElementById('delete-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeDeleteModal()});
 document.getElementById('avatar-change-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeChangeAvatarModal()});
+document.getElementById('name-change-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeChangeNameModal()});
 document.getElementById('close-cycle-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeCloseCycleModal()});
 document.getElementById('cycle-detail-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeCycleDetailModal()});
 document.getElementById('remove-member-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeRemoveMemberModal()});
