@@ -431,6 +431,11 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
           <button class="tb-btn" style="width:28px;height:28px;background:var(--foam);border-color:var(--sea);color:var(--sea-dark)" onclick="mlpChangeDay(1)" id="mlp-next-day-btn">▶</button>
         </div>
         <p style="font-size:12px;color:var(--text-mid);margin-bottom:10px">Puntúa de 0 a -5 a cada persona por ese día — incluido a ti mismo. Puedes revisar y cambiar tus votos de días anteriores.</p>
+        <div id="mlp-voter-as-row" style="display:none;align-items:center;gap:8px;margin-bottom:10px;background:var(--foam);border-radius:9px;padding:8px 10px">
+          <span style="font-size:16px">👑</span>
+          <span style="font-size:12px;color:var(--sea-dark);font-weight:600;flex-shrink:0">Admin — editar votos de:</span>
+          <select class="form-select" id="mlp-voter-as-select" style="padding:5px 8px;font-size:12px" onchange="mlpChangeVoterAs(this.value)"></select>
+        </div>
         <div id="mlp-vote-table"><div class="loading"><div class="spinner"></div></div></div>
         <button class="btn-primary" style="width:100%;margin-top:10px" onclick="submitMlpVotes()">🗳️ Guardar votos</button>
       </div>
@@ -926,7 +931,7 @@ window.createGroup=async()=>{
   const code=gcode();
   const avatarIdx=getSelectedAvatar('create-avatar-grid');
   try{
-    await set(ref(db,`groups/${code}`),{name:gname,password:pass,currency:curr,mlpYear,members:{[uname]:{joined:Date.now(),avatar:avatarIdx}},created:serverTimestamp()});
+    await set(ref(db,`groups/${code}`),{name:gname,password:pass,currency:curr,mlpYear,adminName:uname,members:{[uname]:{joined:Date.now(),avatar:avatarIdx}},created:serverTimestamp()});
     await push(ref(db,`groups/${code}/log`),{type:'create',who:uname,msg:`${uname} creó el chiringuito "${gname}"`,ts:Date.now()});
     state.code=code;state.me=uname;saveSession();
     saveGroupToHistory(code,gname,uname,avatarIdx);
@@ -1664,6 +1669,7 @@ window.toggleSaldarInfo=()=>{
 
 let mlpViewDate=todayKey();
 let mlpDraftVotes={}; // {personName: {score, reason}} for the day being viewed, unsaved edits
+let mlpVoterAs=null; // set to a member name when admin edits someone else's votes
 
 function dateKeyOffset(key, offsetDays){
   const [y,m,d]=key.split('-').map(Number);
@@ -1689,11 +1695,16 @@ window.mlpChangeDay=(delta)=>{
   renderMlpDayVotes();
 };
 
-function getMyVotesForDay(mlpVotesObj, dateKey){
+function isAdmin(){
+  return state.group?.adminName === state.me;
+}
+
+function getMyVotesForDay(mlpVotesObj, dateKey, voterName){
+  const voter=voterName||state.me;
   const mine={};
   Object.entries(mlpVotesObj||{}).forEach(([person,votes])=>{
     Object.values(votes||{}).forEach(v=>{
-      if(v.date===dateKey && v.voter===state.me) mine[person]={score:v.points, reason:v.reason};
+      if(v.date===dateKey && v.voter===voter) mine[person]={score:v.points, reason:v.reason};
     });
   });
   return mine;
@@ -1703,13 +1714,30 @@ function renderMlpVoteTable(){
   const tableEl=document.getElementById('mlp-vote-table');
   const dateLabel=document.getElementById('mlp-vote-date-label');
   const nextBtn=document.getElementById('mlp-next-day-btn');
+  const adminSelectEl=document.getElementById('mlp-voter-as-row');
   if(!tableEl) return;
   dateLabel.textContent=fmtMlpDateLabel(mlpViewDate);
   nextBtn.style.opacity=mlpViewDate>=todayKey()?'0.3':'1';
   nextBtn.style.pointerEvents=mlpViewDate>=todayKey()?'none':'auto';
 
   const members=Object.keys(state.group?.members||{});
-  const existing=getMyVotesForDay(state.group?.mlpVotes||{}, mlpViewDate);
+
+  if(isAdmin()){
+    adminSelectEl.style.display='flex';
+    if(mlpVoterAs===null) mlpVoterAs=state.me;
+    const sel=document.getElementById('mlp-voter-as-select');
+    if(sel && sel.dataset.built!=='1'){
+      sel.innerHTML=members.map(m=>`<option value="${m}">${m}${m===state.me?' (yo)':''}</option>`).join('');
+      sel.dataset.built='1';
+    }
+    if(sel) sel.value=mlpVoterAs;
+  }else{
+    adminSelectEl.style.display='none';
+    mlpVoterAs=state.me;
+  }
+
+  const voterName=mlpVoterAs||state.me;
+  const existing=getMyVotesForDay(state.group?.mlpVotes||{}, mlpViewDate, voterName);
   mlpDraftVotes={...existing};
 
   const scores=[0,-1,-2,-3,-4,-5];
@@ -1718,7 +1746,7 @@ function renderMlpVoteTable(){
     return`<div class="mlp-vote-row">
       <div class="mlp-vote-row-head">
         <div class="avatar" style="width:28px;height:28px;font-size:10px;background:${getMemberBg(m)};overflow:hidden">${getMemberAvatar(m)}</div>
-        <div class="mlp-vote-row-name">${m}${m===state.me?' (yo)':''}</div>
+        <div class="mlp-vote-row-name">${m}${m===voterName?' (votante)':''}</div>
       </div>
       <div class="mlp-vote-scores" id="mlp-scores-${cssSafe(m)}">
         ${scores.map(s=>`<div class="mlp-vote-score-btn ${current&&current.score===s?'sel':''}" onclick="mlpSetScore('${m.replace(/'/g,"\\'")}',${s})">${s}</div>`).join('')}
@@ -1727,6 +1755,12 @@ function renderMlpVoteTable(){
     </div>`;
   }).join('');
 }
+
+window.mlpChangeVoterAs=(name)=>{
+  mlpVoterAs=name;
+  renderMlpVoteTable();
+};
+
 
 function cssSafe(name){
   return name.replace(/[^a-zA-Z0-9]/g,'_');
@@ -1752,6 +1786,7 @@ window.mlpSetReason=(person, value)=>{
 };
 
 window.submitMlpVotes=async()=>{
+  const voterName=mlpVoterAs||state.me;
   const entries=Object.entries(mlpDraftVotes).filter(([,v])=>v.score<0);
   const missingReason=entries.find(([,v])=>!v.reason || !v.reason.trim());
   if(missingReason){toast(`⚠️ Falta el motivo para ${missingReason[0]}`);return}
@@ -1759,16 +1794,16 @@ window.submitMlpVotes=async()=>{
   try{
     const updates={};
     entries.forEach(([person,v])=>{
-      const voteId=`${mlpViewDate}_${state.me}`;
+      const voteId=`${mlpViewDate}_${voterName}`;
       updates[`mlpVotes/${person}/${voteId}`]={
-        voter:state.me, points:v.score, reason:v.reason.trim(), ts:Date.now(), date:mlpViewDate
+        voter:voterName, points:v.score, reason:v.reason.trim(), ts:Date.now(), date:mlpViewDate
       };
     });
     // Remove votes for people set back to 0 that existed before
-    const existing=getMyVotesForDay(state.group?.mlpVotes||{}, mlpViewDate);
+    const existing=getMyVotesForDay(state.group?.mlpVotes||{}, mlpViewDate, voterName);
     Object.keys(existing).forEach(person=>{
       if(!mlpDraftVotes[person] || mlpDraftVotes[person].score===0){
-        const voteId=`${mlpViewDate}_${state.me}`;
+        const voteId=`${mlpViewDate}_${voterName}`;
         updates[`mlpVotes/${person}/${voteId}`]=null;
       }
     });
@@ -1776,7 +1811,7 @@ window.submitMlpVotes=async()=>{
     await push(ref(db,`groups/${state.code}/log`),{
       type:'del',
       who:state.me,
-      msg:`${state.me} votó en el MLP del ${fmtMlpDateLabel(mlpViewDate)} (${entries.length} persona${entries.length>1?'s':''})`,
+      msg:`${state.me}${voterName!==state.me?` (como admin, votos de ${voterName})`:''} votó en el MLP del ${fmtMlpDateLabel(mlpViewDate)} (${entries.length} persona${entries.length>1?'s':''})`,
       ts:Date.now()
     });
     toast('🏆 Votos guardados');
