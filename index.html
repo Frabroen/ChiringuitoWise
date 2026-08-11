@@ -268,6 +268,8 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 .legend-name{font-size:20px;font-weight:800;color:#FCD34D;text-align:center;letter-spacing:0.02em}
 .legend-titles{font-size:11px;color:#94A3B8;text-align:center;text-transform:uppercase;letter-spacing:0.08em;margin-top:2px;margin-bottom:10px}
 .legend-desc{font-size:13px;color:#CBD5E1;line-height:1.6;text-align:center;font-style:italic;padding:0 8px}
+.legend-quote{font-size:14px;color:#FCD34D;text-align:center;font-weight:700;margin-top:12px;padding:10px 12px;border-top:1px solid #334155;border-bottom:1px solid #334155}
+.legend-quote::before,.legend-quote::after{content:'"';opacity:0.5}
 .legend-empty{text-align:center;color:#64748B;padding:1.5rem 0}
 .legend-edit-btn{display:block;margin:12px auto 0;font-size:11px;color:#7DD3FC;background:none;border:none;cursor:pointer;text-decoration:underline}
 @media(max-width:400px){.stat-val{font-size:16px}.share-code{font-size:26px}}
@@ -500,6 +502,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
         <div id="legend-admin-edit" style="display:none;margin-top:10px">
           <input class="form-input" id="legend-name-input" placeholder="Nombre de la leyenda" style="margin-bottom:8px">
           <textarea class="form-input" id="legend-desc-input" placeholder="Descripción épica..." rows="3" style="resize:none;margin-bottom:8px"></textarea>
+          <input class="form-input" id="legend-quote-input" placeholder="Palabra de la leyenda (frase corta)..." style="margin-bottom:8px">
           <button class="btn-primary" style="width:100%" onclick="saveLegend()">✨ Consagrar leyenda</button>
         </div>
       </div>
@@ -1750,6 +1753,7 @@ function renderLegend(){
       <div class="legend-name">${legend.name}</div>
       <div class="legend-titles">Leyenda · Guía Espiritual · Modelo de Éxito</div>
       <div class="legend-desc">"${legend.desc||''}"</div>
+      ${legend.quote?`<div class="legend-quote">${legend.quote}</div>`:''}
       ${admin?'<button class="legend-edit-btn" onclick="toggleLegendEdit()">✏️ Editar leyenda</button>':''}
     `;
   }else{
@@ -1761,6 +1765,7 @@ function renderLegend(){
   if(admin){
     document.getElementById('legend-name-input').value=legend?.name||'';
     document.getElementById('legend-desc-input').value=legend?.desc||'';
+    document.getElementById('legend-quote-input').value=legend?.quote||'';
   }
 }
 
@@ -1772,10 +1777,11 @@ window.toggleLegendEdit=()=>{
 window.saveLegend=async()=>{
   const name=document.getElementById('legend-name-input').value.trim();
   const desc=document.getElementById('legend-desc-input').value.trim();
+  const quote=document.getElementById('legend-quote-input').value.trim();
   if(!name){toast('⚠️ Escribe un nombre');return}
   try{
     await update(ref(db,`groups/${state.code}`),{
-      legend:{name, desc, setBy:state.me, ts:Date.now()}
+      legend:{name, desc, quote, setBy:state.me, ts:Date.now()}
     });
     await push(ref(db,`groups/${state.code}/log`),{
       type:'add', who:state.me,
