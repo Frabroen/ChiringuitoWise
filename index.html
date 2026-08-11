@@ -168,6 +168,16 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 .my-group-del:hover{background:#FEE2E2}
 .member-row:last-child{border-bottom:none}
 .status-bar{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.birro-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(0,0,0,0.05)}
+.birro-row:last-child{border-bottom:none}
+.birro-name{flex:1;font-size:14px;font-weight:500}
+.birro-btn{width:32px;height:32px;border-radius:8px;border:1.5px solid rgba(0,0,0,0.12);background:white;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.birro-btn:active{background:var(--foam)}
+.birro-btn.minus{color:#DC2626}
+.birro-btn.plus{color:#10B981}
+.birro-count-wrap{display:flex;align-items:center;gap:4px;min-width:44px;justify-content:center}
+.birro-emoji{font-size:18px}
+.birro-count{font-size:16px;font-weight:700;color:var(--text)}
 .status-chip{padding:5px 10px;border-radius:99px;font-size:12px;font-weight:500;cursor:pointer;border:1.5px solid transparent;transition:all 0.15s;white-space:nowrap}
 .status-chip:hover{opacity:0.85}
 .status-chip.active-status{border-color:var(--sea-dark);box-shadow:0 0 0 2px var(--foam)}
@@ -379,7 +389,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 
   <div class="tabs">
     <div class="tab active" onclick="showPanel('oficina')"><span class="ti">😎</span>Oficina</div>
-    <div class="tab" onclick="showPanel('gastos')"><span class="ti">🍺</span>Gastos</div>
+    <div class="tab" onclick="showPanel('gastos')"><span class="ti">💸</span>Gastos</div>
     <div class="tab" onclick="showPanel('balances')"><span class="ti">⚖️</span>Balances</div>
     <div class="tab" onclick="showPanel('mlp')"><span class="ti">🏆</span>MLP</div>
     <div class="tab" onclick="showPanel('galeria')"><span class="ti">📖</span>Legado</div>
@@ -393,8 +403,12 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
         <div id="pandilla-status"><div class="loading"><div class="spinner"></div></div></div>
         <div style="margin-top:12px">
           <div style="font-size:11px;color:var(--text-mid);font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em">Mi estado:</div>
-          <div class="status-bar" id="my-status-bar"></div>
+          <select class="form-select" id="my-status-select" onchange="setStatus(this.value)"></select>
         </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span class="card-icon">🍺</span><span class="card-title">Birrómetro</span></div>
+        <div id="birrometro-list"></div>
       </div>
       <div class="card" style="display:flex;flex-direction:column;gap:0">
         <div class="card-head"><span class="card-icon">💬</span><span class="card-title">Chat del chiringuito</span></div>
@@ -1157,6 +1171,7 @@ function renderAll(){
   renderHofMoments();
   renderLegend();
   renderStatusBar();
+  renderBirrometro();
   renderPandillaStatus();
   renderChat(g.chat||{});
   const total=Object.keys(g.log||{}).length;
@@ -1600,14 +1615,11 @@ const STATUSES=[
 function renderStatusBar(){
   const g=state.group;
   const myStatus=g?.members?.[state.me]?.status||null;
-  const bar=document.getElementById('my-status-bar');
-  if(!bar) return;
-  bar.innerHTML=STATUSES.map(s=>`
-    <div class="status-chip ${myStatus===s.key?'active-status':''}"
-      style="background:${s.bg};color:${s.color}"
-      onclick="setStatus('${s.key}')">
-      ${s.emoji} ${s.label}
-    </div>`).join('');
+  const sel=document.getElementById('my-status-select');
+  if(!sel) return;
+  const options=[`<option value="">— Sin estado —</option>`]
+    .concat(STATUSES.map(s=>`<option value="${s.key}"${myStatus===s.key?' selected':''}>${s.emoji} ${s.label}</option>`));
+  sel.innerHTML=options.join('');
 }
 
 function renderPandillaStatus(){
@@ -1812,13 +1824,42 @@ window.saveLegend=async()=>{
 };
 
 window.setStatus=async(key)=>{
-  const current=state.group?.members?.[state.me]?.status;
-  const newStatus=current===key?null:key;
+  const newStatus=key||null;
   try{
     await update(ref(db,`groups/${state.code}/members/${state.me}`),{status:newStatus});
     const s=STATUSES.find(x=>x.key===key);
     toast(newStatus?`${s.emoji} Estado: ${s.label}`:'Estado eliminado');
   }catch(e){toast('❌ Error al actualizar estado')}
+};
+
+// ── BIRRÓMETRO (beer counter per member) ──────────────────
+function renderBirrometro(){
+  const el=document.getElementById('birrometro-list');
+  if(!el) return;
+  const members=Object.keys(state.group?.members||{});
+  el.innerHTML=members.map(m=>{
+    const count=state.group?.members?.[m]?.beers||0;
+    const visualCount=Math.min(count,10);
+    const beers='🍺'.repeat(visualCount)+(count>10?` +${count-10}`:'');
+    return`<div class="birro-row">
+      <div class="avatar" style="width:28px;height:28px;font-size:10px;background:${getMemberBg(m)};overflow:hidden">${getMemberAvatar(m)}</div>
+      <div class="birro-name">${m}${m===state.me?' (yo)':''}</div>
+      <button class="birro-btn minus" onclick="changeBeers('${m.replace(/'/g,"\\'")}',-1)">−</button>
+      <div class="birro-count-wrap">
+        <span class="birro-count">${count}</span>
+      </div>
+      <button class="birro-btn plus" onclick="changeBeers('${m.replace(/'/g,"\\'")}',1)">+</button>
+    </div>
+    ${count>0?`<div style="margin-left:38px;margin-bottom:6px;font-size:16px;line-height:1.4;letter-spacing:1px">${beers}</div>`:''}`;
+  }).join('');
+}
+
+window.changeBeers=async(name, delta)=>{
+  const current=state.group?.members?.[name]?.beers||0;
+  const newCount=Math.max(0, current+delta);
+  try{
+    await update(ref(db,`groups/${state.code}/members/${name}`),{beers:newCount});
+  }catch(e){toast('❌ Error al actualizar')}
 };
 
 window.openChangeAvatarModal=()=>{
