@@ -250,6 +250,20 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 .split-manual-amt{width:90px;padding:6px 8px;border:1.5px solid rgba(0,0,0,0.12);border-radius:7px;font-size:13px;text-align:right;outline:none;font-family:inherit}
 .split-manual-amt:focus{border-color:var(--sea)}
 .split-manual-clear{width:26px;height:26px;border-radius:6px;border:1px solid #FEE2E2;background:#FFF5F5;color:#DC2626;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.gallery-year-card{background:white;border:1px solid var(--border);border-radius:14px;padding:1rem 1.1rem;margin-bottom:12px}
+.gallery-year-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.gallery-year-label{font-size:16px;font-weight:700;color:var(--sea-dark)}
+.gallery-year-meta{font-size:11px;color:var(--text-light)}
+.gallery-photo-box{width:100%;border-radius:12px;overflow:hidden;background:var(--foam);position:relative;cursor:pointer;min-height:160px;display:flex;align-items:center;justify-content:center}
+.gallery-photo-box img{width:100%;display:block;object-fit:cover;max-height:320px}
+.gallery-photo-empty{text-align:center;color:var(--text-light);padding:2rem 1rem}
+.gallery-photo-empty .big{font-size:36px;margin-bottom:6px}
+.gallery-photo-actions{display:flex;gap:8px;margin-top:10px}
+.proverb-item{padding:10px 0;border-bottom:1px solid rgba(0,0,0,0.05)}
+.proverb-item:last-child{border-bottom:none}
+.proverb-ref{font-size:11px;font-weight:700;color:var(--coral);margin-bottom:3px;letter-spacing:0.02em}
+.proverb-text{font-size:14px;line-height:1.5;color:var(--text);font-style:italic}
+.proverb-author{font-size:11px;color:var(--text-light);margin-top:3px;text-align:right}
 @media(max-width:400px){.stat-val{font-size:16px}.share-code{font-size:26px}}
 </style>
 </head>
@@ -350,8 +364,8 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
     <div class="tab active" onclick="showPanel('oficina')"><span class="ti">😎</span>Oficina</div>
     <div class="tab" onclick="showPanel('gastos')"><span class="ti">🍺</span>Gastos</div>
     <div class="tab" onclick="showPanel('balances')"><span class="ti">⚖️</span>Balances</div>
-    <div class="tab" onclick="showPanel('saldar')"><span class="ti">🤝</span>Saldar</div>
     <div class="tab" onclick="showPanel('mlp')"><span class="ti">🏆</span>MLP</div>
+    <div class="tab" onclick="showPanel('galeria')"><span class="ti">📸</span>Galería</div>
     <div class="tab" onclick="showPanel('share')"><span class="ti">🌴</span>Grupo</div>
   </div>
 
@@ -374,6 +388,15 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
           <button class="btn-primary" style="flex:none;padding:9px 16px;font-size:15px" onclick="sendChat()">➤</button>
         </div>
       </div>
+      <div class="card">
+        <div class="card-head"><span class="card-icon">📖</span><span class="card-title">Proverbios de la Costalita</span></div>
+        <div id="proverbs-list" style="margin-bottom:10px"></div>
+        <div style="display:flex;gap:8px">
+          <input class="form-input" id="proverb-input" placeholder="Escribe la frase para la historia..." style="flex:1;padding:9px 12px"
+            onkeydown="if(event.key==='Enter')addProverb()">
+          <button class="btn-primary" style="flex:none;padding:9px 16px;font-size:15px" onclick="addProverb()">➤</button>
+        </div>
+      </div>
     </div>
 
     <div class="panel" id="panel-gastos">
@@ -394,9 +417,6 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
         <div class="card-head"><span class="card-icon">⚖️</span><span class="card-title">Balance de la pandilla</span></div>
         <div id="balances-list"><div class="loading"><div class="spinner"></div></div></div>
       </div>
-    </div>
-
-    <div class="panel" id="panel-saldar">
       <div class="card" style="background:var(--foam);border-color:#BAE6FD;cursor:pointer" onclick="toggleSaldarInfo()">
         <div class="card-head" style="margin-bottom:0"><span class="card-icon">💡</span><span class="card-title" style="flex:1">¿Cómo funciona esto?</span><span id="saldar-info-arrow" style="font-size:12px;color:var(--sea-dark)">▼</span></div>
         <p id="saldar-info-text" style="font-size:12px;color:var(--text-mid);line-height:1.6;display:none;margin-top:10px">
@@ -455,6 +475,14 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
         <div id="mlp-today-votes"><div class="loading"><div class="spinner"></div></div></div>
       </div>
 
+    </div>
+
+    <div class="panel" id="panel-galeria">
+      <div class="card">
+        <div class="card-head"><span class="card-icon">📸</span><span class="card-title">Fotos de grupo por año</span></div>
+        <p style="font-size:12px;color:var(--text-mid);margin-bottom:2px">Cualquiera puede subir o cambiar la foto de cada año</p>
+      </div>
+      <div id="gallery-years"></div>
     </div>
 
     <div class="panel" id="panel-share">
@@ -769,6 +797,68 @@ window.removeReceipt=()=>{
   document.getElementById('receipt-upload').style.display='block';
 };
 
+// ── GALLERY (yearly group photo) ──────────────────────────
+const GALLERY_YEARS=[2022,2023,2024,2025,2026];
+
+function renderGallery(){
+  const container=document.getElementById('gallery-years');
+  if(!container) return;
+  const photos=state.group?.galleryPhotos||{};
+  container.innerHTML=GALLERY_YEARS.map(year=>{
+    const p=photos[year];
+    return`<div class="gallery-year-card">
+      <div class="gallery-year-head">
+        <div class="gallery-year-label">🏖️ ${year}</div>
+        ${p?`<div class="gallery-year-meta">Subida por ${p.uploadedBy}</div>`:''}
+      </div>
+      <div class="gallery-photo-box" onclick="${p?`openLightbox('${p.data}')`:`document.getElementById('gallery-file-${year}').click()`}">
+        ${p
+          ? `<img src="${p.data}" alt="Foto ${year}">`
+          : `<div class="gallery-photo-empty"><div class="big">📷</div><p>Sin foto todavía<br>Toca para añadir</p></div>`}
+      </div>
+      <input type="file" id="gallery-file-${year}" accept="image/*" style="display:none" onchange="handleGalleryPhoto(this,${year})">
+      ${p?`<div class="gallery-photo-actions">
+        <button class="btn-secondary" style="padding:9px" onclick="document.getElementById('gallery-file-${year}').click()">📷 Cambiar foto</button>
+        <button class="btn-danger" style="padding:9px" onclick="deleteGalleryPhoto(${year})">🗑️</button>
+      </div>`:''}
+    </div>`;
+  }).join('');
+}
+
+window.handleGalleryPhoto=async(input, year)=>{
+  const file=input.files[0];
+  if(!file) return;
+  toast('⏳ Comprimiendo imagen...');
+  try{
+    const b64=await compressImage(file);
+    await update(ref(db,`groups/${state.code}/galleryPhotos/${year}`),{
+      data:b64, uploadedBy:state.me, ts:Date.now()
+    });
+    await push(ref(db,`groups/${state.code}/log`),{
+      type:'add', who:state.me,
+      msg:`${state.me} añadió la foto de grupo de ${year} 📸`,
+      ts:Date.now()
+    });
+    toast(`📸 Foto de ${year} guardada`);
+  }catch(e){
+    toast('❌ Error al guardar la foto');
+  }
+  input.value='';
+};
+
+window.deleteGalleryPhoto=async(year)=>{
+  if(!confirm(`¿Eliminar la foto de grupo de ${year}?`)) return;
+  try{
+    await remove(ref(db,`groups/${state.code}/galleryPhotos/${year}`));
+    await push(ref(db,`groups/${state.code}/log`),{
+      type:'del', who:state.me,
+      msg:`${state.me} eliminó la foto de grupo de ${year}`,
+      ts:Date.now()
+    });
+    toast(`🗑️ Foto de ${year} eliminada`);
+  }catch(e){toast('❌ Error al eliminar')}
+};
+
 window.getLocation=async()=>{
   state.currentLocation=null;
   const status=document.getElementById('loc-status');
@@ -1026,6 +1116,8 @@ function renderAll(){
   renderCyclesArchive(g.cycles||{});
   migrateMlpPositiveVotes(g.mlpVotes||{});
   renderMlp();
+  renderGallery();
+  renderProverbs();
   renderStatusBar();
   renderPandillaStatus();
   renderChat(g.chat||{});
@@ -1212,7 +1304,7 @@ function renderLog(logObj){
 }
 
 window.showPanel=(id)=>{
-  const ids=['oficina','gastos','balances','saldar','mlp','share'];
+  const ids=['oficina','gastos','balances','mlp','galeria','share'];
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',ids[i]===id));
   document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id===`panel-${id}`));
   if(id==='log'){
@@ -1456,6 +1548,7 @@ window.markSettled=async(from,to,amt)=>{
 
 const STATUSES=[
   {key:'chiringo', label:'Chiringo', emoji:'🍺', bg:'#FEF3C7', color:'#92400E'},
+  {key:'fiesta', label:'Fiesta', emoji:'💃', bg:'#FCE7F3', color:'#9D174D'},
   {key:'piscinuca', label:'Piscinuca', emoji:'🏊', bg:'#DBEAFE', color:'#1E3A8A'},
   {key:'pasein', label:'Paseín', emoji:'🚶', bg:'#D1FAE5', color:'#065F46'},
   {key:'pitis', label:'Pitis', emoji:'🚬', bg:'#F3E8FF', color:'#6B21A8'},
@@ -1534,6 +1627,47 @@ function renderChat(chatObj){
 function scrollChatToBottom(){
   const el=document.getElementById('chat-messages');
   if(el) setTimeout(()=>el.scrollTop=el.scrollHeight, 50);
+}
+
+// ── PROVERBS (biblical-style quotes) ──────────────────────
+window.addProverb=async()=>{
+  const input=document.getElementById('proverb-input');
+  const text=input.value.trim();
+  if(!text) return;
+  input.value='';
+  try{
+    await push(ref(db,`groups/${state.code}/proverbs`),{
+      who:state.me, text, year:new Date().getFullYear(), ts:Date.now()
+    });
+    await push(ref(db,`groups/${state.code}/log`),{
+      type:'add', who:state.me,
+      msg:`${state.me} añadió un proverbio a la Costalita 📖`,
+      ts:Date.now()
+    });
+  }catch(e){toast('❌ Error al guardar')}
+};
+
+function renderProverbs(){
+  const el=document.getElementById('proverbs-list');
+  if(!el) return;
+  const proverbsObj=state.group?.proverbs||{};
+  const list=Object.values(proverbsObj).sort((a,b)=>a.ts-b.ts);
+  if(!list.length){
+    el.innerHTML='<div class="empty" style="padding:1rem"><div class="big">📖</div><p>Sin proverbios todavía<br>¡Que empiece la escritura sagrada!</p></div>';
+    return;
+  }
+  // Group by year to number verses like chapter:verse
+  const countByYear={};
+  el.innerHTML=list.map(p=>{
+    const y=p.year||new Date(p.ts).getFullYear();
+    countByYear[y]=(countByYear[y]||0)+1;
+    const verse=countByYear[y];
+    return`<div class="proverb-item">
+      <div class="proverb-ref">Costalita ${y}, ${verse}</div>
+      <div class="proverb-text">"${p.text}"</div>
+      <div class="proverb-author">— ${p.who}</div>
+    </div>`;
+  }).reverse().join('');
 }
 
 window.setStatus=async(key)=>{
