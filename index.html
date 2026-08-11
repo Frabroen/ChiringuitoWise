@@ -527,7 +527,10 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 
     <div class="panel" id="panel-galeria">
       <div class="card">
-        <div class="card-head"><span class="card-icon">📖</span><span class="card-title">Palabra de Costalita</span></div>
+        <div class="card-head" style="margin-bottom:10px">
+          <span class="card-icon">📖</span><span class="card-title" style="flex:1">Palabra de Costalita</span>
+          <button class="proverb-action-btn" onclick="openManageModal('proverb')">✏️ Gestionar</button>
+        </div>
         <div id="proverbs-list" style="margin-bottom:10px"></div>
         <div style="display:flex;gap:8px">
           <input class="form-input" id="proverb-input" placeholder="Escribe la frase para la historia..." style="flex:1;padding:9px 12px"
@@ -536,7 +539,10 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
         </div>
       </div>
       <div class="card">
-        <div class="card-head"><span class="card-icon">🏆</span><span class="card-title">Hall of Fame</span></div>
+        <div class="card-head" style="margin-bottom:4px">
+          <span class="card-icon">🏆</span><span class="card-title" style="flex:1">Hall of Fame</span>
+          <button class="proverb-action-btn" onclick="openManageModal('hof')">✏️ Gestionar</button>
+        </div>
         <p style="font-size:12px;color:var(--text-mid);margin-bottom:10px">Momentos épicos que pasarán a la historia</p>
         <div id="hof-list" style="margin-bottom:10px"></div>
         <div style="display:flex;gap:8px">
@@ -781,6 +787,17 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
     <div class="cycle-summary" id="cycle-detail-content" style="max-height:400px"></div>
     <div class="modal-btns">
       <button class="btn-primary" onclick="closeCycleDetailModal()" style="flex:1">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="manage-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="manage-modal-title">✏️ Gestionar</div>
+    <div id="manage-modal-list" style="max-height:60vh;overflow-y:auto"></div>
+    <div class="modal-btns">
+      <button class="btn-primary" style="flex:1" onclick="closeManageModal()">Cerrar</button>
     </div>
   </div>
 </div>
@@ -1737,53 +1754,24 @@ function renderProverbs(){
     el.innerHTML='<div class="empty" style="padding:1rem"><div class="big">📖</div><p>Sin proverbios todavía<br>¡Que empiece la escritura sagrada!</p></div>';
     return;
   }
-  // Group by year to number verses like chapter:verse
   const countByYear={};
   el.innerHTML=list.map(p=>{
     const y=p.year||new Date(p.ts).getFullYear();
     countByYear[y]=(countByYear[y]||0)+1;
     const verse=countByYear[y];
-    return`<div class="proverb-item" id="proverb-item-${p.id}">
-      <div class="proverb-view">
-        <div class="proverb-ref">Costalita ${y}, ${verse}</div>
-        <div class="proverb-text">"${p.text}"</div>
-        <div class="proverb-actions">
-          <button class="proverb-action-btn" onclick="editProverb('${p.id}')">✏️ Editar</button>
-          <button class="proverb-action-btn danger" onclick="deleteProverb('${p.id}')">🗑️ Eliminar</button>
-        </div>
-      </div>
+    return`<div class="proverb-item">
+      <div class="proverb-ref">Costalita ${y}, ${verse}</div>
+      <div class="proverb-text">"${p.text}"</div>
     </div>`;
   }).reverse().join('');
 }
-
-window.editProverb=(id)=>{
-  const p=state.group?.proverbs?.[id];
-  if(!p) return;
-  const container=document.getElementById(`proverb-item-${id}`);
-  container.innerHTML=`
-    <div class="form-row">
-      <textarea class="form-input" id="proverb-edit-${id}" rows="2" style="resize:none">${p.text}</textarea>
-    </div>
-    <div class="modal-btns" style="margin-top:0">
-      <button class="btn-secondary" style="padding:9px" onclick="renderProverbs()">Cancelar</button>
-      <button class="btn-primary" style="padding:9px" onclick="saveProverbEdit('${id}')">Guardar</button>
-    </div>`;
-};
-
-window.saveProverbEdit=async(id)=>{
-  const text=document.getElementById(`proverb-edit-${id}`).value.trim();
-  if(!text){toast('⚠️ El proverbio no puede estar vacío');return}
-  try{
-    await update(ref(db,`groups/${state.code}/proverbs/${id}`),{text});
-    toast('📖 Proverbio actualizado');
-  }catch(e){toast('❌ Error al guardar')}
-};
 
 window.deleteProverb=async(id)=>{
   if(!confirm('¿Eliminar este proverbio?')) return;
   try{
     await remove(ref(db,`groups/${state.code}/proverbs/${id}`));
     toast('🗑️ Proverbio eliminado');
+    openManageModal('proverb');
   }catch(e){toast('❌ Error al eliminar')}
 };
 
@@ -1819,48 +1807,82 @@ function renderHofMoments(){
     const y=p.year||new Date(p.ts).getFullYear();
     countByYear[y]=(countByYear[y]||0)+1;
     const entry=countByYear[y];
-    return`<div class="proverb-item" id="hof-item-${p.id}">
-      <div class="proverb-view">
-        <div class="proverb-ref">Hall of Fame ${y}, ${entry}</div>
-        <div class="proverb-text">"${p.text}"</div>
-        <div class="proverb-actions">
-          <button class="proverb-action-btn" onclick="editHofMoment('${p.id}')">✏️ Editar</button>
-          <button class="proverb-action-btn danger" onclick="deleteHofMoment('${p.id}')">🗑️ Eliminar</button>
-        </div>
-      </div>
+    return`<div class="proverb-item">
+      <div class="proverb-ref">Hall of Fame ${y}, ${entry}</div>
+      <div class="proverb-text">"${p.text}"</div>
     </div>`;
   }).reverse().join('');
 }
-
-window.editHofMoment=(id)=>{
-  const p=state.group?.hallOfFame?.[id];
-  if(!p) return;
-  const container=document.getElementById(`hof-item-${id}`);
-  container.innerHTML=`
-    <div class="form-row">
-      <textarea class="form-input" id="hof-edit-${id}" rows="2" style="resize:none">${p.text}</textarea>
-    </div>
-    <div class="modal-btns" style="margin-top:0">
-      <button class="btn-secondary" style="padding:9px" onclick="renderHofMoments()">Cancelar</button>
-      <button class="btn-primary" style="padding:9px" onclick="saveHofEdit('${id}')">Guardar</button>
-    </div>`;
-};
-
-window.saveHofEdit=async(id)=>{
-  const text=document.getElementById(`hof-edit-${id}`).value.trim();
-  if(!text){toast('⚠️ El momento no puede estar vacío');return}
-  try{
-    await update(ref(db,`groups/${state.code}/hallOfFame/${id}`),{text});
-    toast('🏆 Momento actualizado');
-  }catch(e){toast('❌ Error al guardar')}
-};
 
 window.deleteHofMoment=async(id)=>{
   if(!confirm('¿Eliminar este momento del Hall of Fame?')) return;
   try{
     await remove(ref(db,`groups/${state.code}/hallOfFame/${id}`));
     toast('🗑️ Momento eliminado');
+    openManageModal('hof');
   }catch(e){toast('❌ Error al eliminar')}
+};
+
+// ── MANAGE MODAL (unified editor for proverbs & hof) ───────
+let manageModalType=null;
+
+window.openManageModal=(type)=>{
+  manageModalType=type;
+  const title=document.getElementById('manage-modal-title');
+  title.textContent = type==='proverb' ? '📖 Gestionar Proverbios' : '🏆 Gestionar Hall of Fame';
+  renderManageList();
+  document.getElementById('manage-modal').classList.add('open');
+};
+
+window.closeManageModal=()=>{
+  document.getElementById('manage-modal').classList.remove('open');
+  manageModalType=null;
+};
+
+function renderManageList(){
+  const el=document.getElementById('manage-modal-list');
+  const path = manageModalType==='proverb' ? 'proverbs' : 'hallOfFame';
+  const obj = manageModalType==='proverb' ? (state.group?.proverbs||{}) : (state.group?.hallOfFame||{});
+  const list=Object.entries(obj).map(([id,p])=>({...p,id})).sort((a,b)=>b.ts-a.ts);
+  if(!list.length){
+    el.innerHTML='<div class="empty" style="padding:1rem"><p>Nada que gestionar todavía</p></div>';
+    return;
+  }
+  el.innerHTML=list.map(p=>`
+    <div class="proverb-item" id="manage-item-${p.id}">
+      <div class="proverb-text" style="font-style:normal;text-align:left">"${p.text}"</div>
+      <div class="proverb-actions" style="justify-content:flex-start">
+        <button class="proverb-action-btn" onclick="startManageEdit('${p.id}')">✏️ Editar</button>
+        <button class="proverb-action-btn danger" onclick="${manageModalType==='proverb'?'deleteProverb':'deleteHofMoment'}('${p.id}')">🗑️ Eliminar</button>
+      </div>
+    </div>`).join('');
+}
+
+window.startManageEdit=(id)=>{
+  const path = manageModalType==='proverb' ? 'proverbs' : 'hallOfFame';
+  const obj = manageModalType==='proverb' ? state.group?.proverbs : state.group?.hallOfFame;
+  const p=obj?.[id];
+  if(!p) return;
+  const container=document.getElementById(`manage-item-${id}`);
+  container.innerHTML=`
+    <div class="form-row">
+      <textarea class="form-input" id="manage-edit-${id}" rows="2" style="resize:none">${p.text}</textarea>
+    </div>
+    <div class="modal-btns" style="margin-top:0">
+      <button class="btn-secondary" style="padding:9px" onclick="renderManageList()">Cancelar</button>
+      <button class="btn-primary" style="padding:9px" onclick="saveManageEdit('${id}')">Guardar</button>
+    </div>`;
+};
+
+window.saveManageEdit=async(id)=>{
+  const text=document.getElementById(`manage-edit-${id}`).value.trim();
+  if(!text){toast('⚠️ No puede quedar vacío');return}
+  const path = manageModalType==='proverb' ? 'proverbs' : 'hallOfFame';
+  try{
+    await update(ref(db,`groups/${state.code}/${path}/${id}`),{text});
+    toast('✏️ Actualizado');
+    renderManageList();
+  }catch(e){toast('❌ Error al guardar')}
 };
 
 // ── LEGEND (fixed admin-set honorary title) ────────────────
@@ -2504,6 +2526,7 @@ document.getElementById('close-cycle-modal').addEventListener('click',e=>{if(e.t
 document.getElementById('cycle-detail-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeCycleDetailModal()});
 document.getElementById('remove-member-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeRemoveMemberModal()});
 document.getElementById('group-settings-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeGroupSettingsModal()});
+document.getElementById('manage-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeManageModal()});
 document.getElementById('inp-code').addEventListener('input',function(){this.value=this.value.toUpperCase()});
 
 loadSession();
