@@ -1754,7 +1754,7 @@ function renderLegend(){
   const editSection=document.getElementById('legend-admin-edit');
   if(!displayEl) return;
   const legend=state.group?.legend;
-  const admin=isAdmin();
+  const admin=true; // any member can consagrar the legend
   const members=Object.keys(state.group?.members||{});
 
   if(legend && legend.name){
