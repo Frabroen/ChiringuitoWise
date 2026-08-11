@@ -410,7 +410,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
         <div id="pandilla-status"><div class="loading"><div class="spinner"></div></div></div>
         <div style="margin-top:12px">
           <div style="font-size:11px;color:var(--text-mid);font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em">Mi estado:</div>
-          <select class="form-select" id="my-status-select" onchange="setStatus(this.value)"></select>
+          <div class="status-bar" id="my-status-bar"></div>
         </div>
       </div>
       <div class="card" style="display:flex;flex-direction:column;gap:0">
@@ -1663,11 +1663,14 @@ const STATUSES=[
 function renderStatusBar(){
   const g=state.group;
   const myStatus=g?.members?.[state.me]?.status||null;
-  const sel=document.getElementById('my-status-select');
-  if(!sel) return;
-  const options=[`<option value="">— Sin estado —</option>`]
-    .concat(STATUSES.map(s=>`<option value="${s.key}"${myStatus===s.key?' selected':''}>${s.emoji} ${s.label}</option>`));
-  sel.innerHTML=options.join('');
+  const bar=document.getElementById('my-status-bar');
+  if(!bar) return;
+  bar.innerHTML=STATUSES.map(s=>`
+    <div class="status-chip ${myStatus===s.key?'active-status':''}"
+      style="background:${s.bg};color:${s.color}"
+      onclick="setStatus('${s.key}')">
+      ${s.emoji} ${s.label}
+    </div>`).join('');
 }
 
 function renderPandillaStatus(){
@@ -1949,7 +1952,8 @@ window.saveLegend=async()=>{
 };
 
 window.setStatus=async(key)=>{
-  const newStatus=key||null;
+  const current=state.group?.members?.[state.me]?.status;
+  const newStatus=current===key?null:key;
   try{
     await update(ref(db,`groups/${state.code}/members/${state.me}`),{status:newStatus});
     const s=STATUSES.find(x=>x.key===key);
