@@ -381,7 +381,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
         <button class="tb-btn" onclick="showPanel('log')" title="Historial">
           📋<span class="notif-badge" id="notif-badge">!</span>
         </button>
-        <button class="tb-btn" onclick="showPanel('share')" title="Compartir">🔗</button>
+        <button class="tb-btn" onclick="openGroupSettingsModal()" title="Configuración de grupo">🔗</button>
         <button class="tb-btn" onclick="logout()" title="Salir">🚪</button>
       </div>
     </div>
@@ -389,11 +389,11 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 
   <div class="tabs">
     <div class="tab active" onclick="showPanel('oficina')"><span class="ti">😎</span>Oficina</div>
+    <div class="tab" onclick="showPanel('birrometro')"><span class="ti">🍺</span>Birrómetro</div>
     <div class="tab" onclick="showPanel('gastos')"><span class="ti">💸</span>Gastos</div>
     <div class="tab" onclick="showPanel('balances')"><span class="ti">⚖️</span>Balances</div>
     <div class="tab" onclick="showPanel('mlp')"><span class="ti">🏆</span>MLP</div>
     <div class="tab" onclick="showPanel('galeria')"><span class="ti">📖</span>Legado</div>
-    <div class="tab" onclick="showPanel('share')"><span class="ti">🌴</span>Grupo</div>
   </div>
 
   <div class="content">
@@ -406,10 +406,6 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
           <select class="form-select" id="my-status-select" onchange="setStatus(this.value)"></select>
         </div>
       </div>
-      <div class="card">
-        <div class="card-head"><span class="card-icon">🍺</span><span class="card-title">Birrómetro</span></div>
-        <div id="birrometro-list"></div>
-      </div>
       <div class="card" style="display:flex;flex-direction:column;gap:0">
         <div class="card-head"><span class="card-icon">💬</span><span class="card-title">Chat del chiringuito</span></div>
         <div id="chat-messages" style="display:flex;flex-direction:column;gap:8px;min-height:200px;max-height:320px;overflow-y:auto;padding-bottom:4px"></div>
@@ -418,6 +414,13 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
             onkeydown="if(event.key==='Enter')sendChat()">
           <button class="btn-primary" style="flex:none;padding:9px 16px;font-size:15px" onclick="sendChat()">➤</button>
         </div>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-birrometro">
+      <div class="card">
+        <div class="card-head"><span class="card-icon">🍺</span><span class="card-title">Birrómetro</span></div>
+        <div id="birrometro-list"></div>
       </div>
     </div>
 
@@ -497,6 +500,17 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
         <div id="mlp-today-votes"><div class="loading"><div class="spinner"></div></div></div>
       </div>
 
+      <div class="card" style="background:linear-gradient(135deg,#FDE68A,#FCD34D,#F59E0B);border:2px solid #B45309;box-shadow:0 4px 20px rgba(245,158,11,0.3)">
+        <div class="card-head"><span class="card-icon">✨</span><span class="card-title" style="color:#78350F;font-weight:700">Leyenda Histórica</span></div>
+        <div id="legend-display"></div>
+        <div id="legend-admin-edit" style="display:none;margin-top:10px">
+          <select class="form-select" id="legend-name-input" style="margin-bottom:8px"></select>
+          <textarea class="form-input" id="legend-desc-input" placeholder="Descripción épica..." rows="3" style="resize:none;margin-bottom:8px"></textarea>
+          <input class="form-input" id="legend-quote-input" placeholder="Palabra de la leyenda (frase corta)..." style="margin-bottom:8px">
+          <button class="btn-primary" style="width:100%" onclick="saveLegend()">✨ Consagrar leyenda</button>
+        </div>
+      </div>
+
     </div>
 
     <div class="panel" id="panel-galeria">
@@ -519,57 +533,55 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
           <button class="btn-primary" style="flex:none;padding:9px 16px;font-size:15px" onclick="addHofMoment()">➤</button>
         </div>
       </div>
-      <div class="card" style="background:linear-gradient(135deg,#FDE68A,#FCD34D,#F59E0B);border:2px solid #B45309;box-shadow:0 4px 20px rgba(245,158,11,0.3)">
-        <div class="card-head"><span class="card-icon">✨</span><span class="card-title" style="color:#78350F;font-weight:700">Leyenda Histórica</span></div>
-        <div id="legend-display"></div>
-        <div id="legend-admin-edit" style="display:none;margin-top:10px">
-          <select class="form-select" id="legend-name-input" style="margin-bottom:8px"></select>
-          <textarea class="form-input" id="legend-desc-input" placeholder="Descripción épica..." rows="3" style="resize:none;margin-bottom:8px"></textarea>
-          <input class="form-input" id="legend-quote-input" placeholder="Palabra de la leyenda (frase corta)..." style="margin-bottom:8px">
-          <button class="btn-primary" style="width:100%" onclick="saveLegend()">✨ Consagrar leyenda</button>
-        </div>
-      </div>
     </div>
 
-    <div class="panel" id="panel-share">
-      <div class="card">
-        <div class="card-head"><span class="card-icon">📸</span><span class="card-title" id="costaliteros-title">Costaliteros del año</span></div>
-        <div class="gallery-photo-box" id="costaliteros-photo-box" onclick="document.getElementById('costaliteros-file').click()">
-          <div class="gallery-photo-empty"><div class="big">📷</div><p>Sin foto todavía<br>Toca para añadir</p></div>
-        </div>
-        <input type="file" id="costaliteros-file" accept="image/*" style="display:none" onchange="handleCostaliterosPhoto(this)">
-        <div id="costaliteros-actions" style="display:none" class="gallery-photo-actions">
-          <button class="btn-secondary" style="padding:9px" onclick="document.getElementById('costaliteros-file').click()">📷 Cambiar foto</button>
-          <button class="btn-danger" style="padding:9px" onclick="deleteCostaliterosPhoto()">🗑️</button>
-        </div>
+<!-- GROUP SETTINGS MODAL (formerly the "Grupo" tab) -->
+<div class="modal-backdrop" id="group-settings-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🔗 Configuración de grupo</div>
+    <div class="card">
+      <div class="card-head"><span class="card-icon">📸</span><span class="card-title" id="costaliteros-title">Costaliteros del año</span></div>
+      <div class="gallery-photo-box" id="costaliteros-photo-box" onclick="document.getElementById('costaliteros-file').click()">
+        <div class="gallery-photo-empty"><div class="big">📷</div><p>Sin foto todavía<br>Toca para añadir</p></div>
       </div>
-      <div class="card">
-        <div class="card-head"><span class="card-icon">🔗</span><span class="card-title">Invita a tus amigos</span></div>
-        <div class="share-banner">
-          <div class="share-label">Código del grupo</div>
-          <div class="share-code" id="share-code-disp">------</div>
-          <div class="share-hint">Comparte este código para que se unan 🌴</div>
-          <button class="copy-btn" onclick="copyCode()">📋 Copiar código</button>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-head"><span class="card-icon">👥</span><span class="card-title">La pandilla</span></div>
-        <div id="members-list"><div class="loading"><div class="spinner"></div></div></div>
-        <button class="copy-btn" style="margin-top:10px;background:var(--foam);color:var(--sea-dark);border-color:var(--sea)" onclick="openChangeAvatarModal()">🎭 Cambiar mi avatar</button>
-        <button class="copy-btn" style="margin-top:8px;background:var(--foam);color:var(--sea-dark);border-color:var(--sea)" onclick="openChangeNameModal()">✏️ Cambiar mi nombre</button>
-      </div>
-      <div class="card">
-        <div class="card-head"><span class="card-icon">⚙️</span><span class="card-title">Ajustes</span></div>
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
-          <span style="font-size:14px;color:var(--text-mid);font-weight:500">Moneda</span>
-          <select class="form-select" style="width:auto;padding:7px 10px;font-size:13px" id="curr-sel" onchange="changeCurr(this.value)">
-            <option value="EUR">€ Euro</option><option value="USD">$ Dólar</option>
-            <option value="GBP">£ Libra</option><option value="DKK">DKK Corona</option>
-            <option value="MXN">MXN Peso MX</option><option value="COP">COP Peso CO</option>
-          </select>
-        </div>
+      <input type="file" id="costaliteros-file" accept="image/*" style="display:none" onchange="handleCostaliterosPhoto(this)">
+      <div id="costaliteros-actions" style="display:none" class="gallery-photo-actions">
+        <button class="btn-secondary" style="padding:9px" onclick="document.getElementById('costaliteros-file').click()">📷 Cambiar foto</button>
+        <button class="btn-danger" style="padding:9px" onclick="deleteCostaliterosPhoto()">🗑️</button>
       </div>
     </div>
+    <div class="card">
+      <div class="card-head"><span class="card-icon">🔗</span><span class="card-title">Invita a tus amigos</span></div>
+      <div class="share-banner">
+        <div class="share-label">Código del grupo</div>
+        <div class="share-code" id="share-code-disp">------</div>
+        <div class="share-hint">Comparte este código para que se unan 🌴</div>
+        <button class="copy-btn" onclick="copyCode()">📋 Copiar código</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><span class="card-icon">👥</span><span class="card-title">La pandilla</span></div>
+      <div id="members-list"><div class="loading"><div class="spinner"></div></div></div>
+      <button class="copy-btn" style="margin-top:10px;background:var(--foam);color:var(--sea-dark);border-color:var(--sea)" onclick="openChangeAvatarModal()">🎭 Cambiar mi avatar</button>
+      <button class="copy-btn" style="margin-top:8px;background:var(--foam);color:var(--sea-dark);border-color:var(--sea)" onclick="openChangeNameModal()">✏️ Cambiar mi nombre</button>
+    </div>
+    <div class="card">
+      <div class="card-head"><span class="card-icon">⚙️</span><span class="card-title">Ajustes</span></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+        <span style="font-size:14px;color:var(--text-mid);font-weight:500">Moneda</span>
+        <select class="form-select" style="width:auto;padding:7px 10px;font-size:13px" id="curr-sel" onchange="changeCurr(this.value)">
+          <option value="EUR">€ Euro</option><option value="USD">$ Dólar</option>
+          <option value="GBP">£ Libra</option><option value="DKK">DKK Corona</option>
+          <option value="MXN">MXN Peso MX</option><option value="COP">COP Peso CO</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-primary" style="flex:1" onclick="closeGroupSettingsModal()">Cerrar</button>
+    </div>
+  </div>
+</div>
 
     <div class="panel" id="panel-log">
       <div class="card">
@@ -1357,7 +1369,7 @@ function renderLog(logObj){
 }
 
 window.showPanel=(id)=>{
-  const ids=['oficina','gastos','balances','mlp','galeria','share'];
+  const ids=['oficina','birrometro','gastos','balances','mlp','galeria'];
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',ids[i]===id));
   document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id===`panel-${id}`));
   if(id==='log'){
@@ -1366,6 +1378,13 @@ window.showPanel=(id)=>{
     document.getElementById('notif-badge').style.display='none';
   }
   if(id==='oficina') scrollChatToBottom();
+};
+
+window.openGroupSettingsModal=()=>{
+  document.getElementById('group-settings-modal').classList.add('open');
+};
+window.closeGroupSettingsModal=()=>{
+  document.getElementById('group-settings-modal').classList.remove('open');
 };
 
 window.openModal=()=>{
@@ -2381,6 +2400,7 @@ document.getElementById('name-change-modal').addEventListener('click',e=>{if(e.t
 document.getElementById('close-cycle-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeCloseCycleModal()});
 document.getElementById('cycle-detail-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeCycleDetailModal()});
 document.getElementById('remove-member-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeRemoveMemberModal()});
+document.getElementById('group-settings-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeGroupSettingsModal()});
 document.getElementById('inp-code').addEventListener('input',function(){this.value=this.value.toUpperCase()});
 
 loadSession();
