@@ -273,7 +273,9 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 .proverb-item:last-child{border-bottom:none}
 .proverb-ref{font-size:11px;font-weight:700;color:var(--coral);margin-bottom:3px;letter-spacing:0.02em}
 .proverb-text{font-size:14px;line-height:1.5;color:var(--text);font-style:italic}
-.proverb-author{font-size:11px;color:var(--text-light);margin-top:3px;text-align:right}
+.proverb-actions{display:flex;gap:8px;margin-top:6px;justify-content:flex-end}
+.proverb-action-btn{font-size:11px;color:var(--sea-dark);background:none;border:none;cursor:pointer;text-decoration:underline;padding:2px 4px}
+.proverb-action-btn.danger{color:#DC2626}
 .legend-avatar-wrap{position:relative;width:120px;height:170px;margin:0 auto 12px;overflow:visible}
 .legend-lightbeam{position:absolute;top:-60px;left:50%;transform:translateX(-50%);width:14px;height:90px;background:linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,0.9) 100%);clip-path:polygon(35% 0%, 65% 0%, 100% 100%, 0% 100%);opacity:0.85;animation:beamPulse 2.5s ease-in-out infinite}
 .legend-lightbeam::before{content:'';position:absolute;top:-70px;left:50%;transform:translateX(-50%);width:70px;height:70px;background:radial-gradient(circle, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 70%)}
@@ -1706,7 +1708,7 @@ window.addProverb=async()=>{
   input.value='';
   try{
     await push(ref(db,`groups/${state.code}/proverbs`),{
-      who:state.me, text, year:new Date().getFullYear(), ts:Date.now()
+      text, year:new Date().getFullYear(), ts:Date.now()
     });
     await push(ref(db,`groups/${state.code}/log`),{
       type:'add', who:state.me,
@@ -1720,7 +1722,7 @@ function renderProverbs(){
   const el=document.getElementById('proverbs-list');
   if(!el) return;
   const proverbsObj=state.group?.proverbs||{};
-  const list=Object.values(proverbsObj).sort((a,b)=>a.ts-b.ts);
+  const list=Object.entries(proverbsObj).map(([id,p])=>({...p,id})).sort((a,b)=>a.ts-b.ts);
   if(!list.length){
     el.innerHTML='<div class="empty" style="padding:1rem"><div class="big">📖</div><p>Sin proverbios todavía<br>¡Que empiece la escritura sagrada!</p></div>';
     return;
@@ -1731,13 +1733,49 @@ function renderProverbs(){
     const y=p.year||new Date(p.ts).getFullYear();
     countByYear[y]=(countByYear[y]||0)+1;
     const verse=countByYear[y];
-    return`<div class="proverb-item">
-      <div class="proverb-ref">Costalita ${y}, ${verse}</div>
-      <div class="proverb-text">"${p.text}"</div>
-      <div class="proverb-author">— ${p.who}</div>
+    return`<div class="proverb-item" id="proverb-item-${p.id}">
+      <div class="proverb-view">
+        <div class="proverb-ref">Costalita ${y}, ${verse}</div>
+        <div class="proverb-text">"${p.text}"</div>
+        <div class="proverb-actions">
+          <button class="proverb-action-btn" onclick="editProverb('${p.id}')">✏️ Editar</button>
+          <button class="proverb-action-btn danger" onclick="deleteProverb('${p.id}')">🗑️ Eliminar</button>
+        </div>
+      </div>
     </div>`;
   }).reverse().join('');
 }
+
+window.editProverb=(id)=>{
+  const p=state.group?.proverbs?.[id];
+  if(!p) return;
+  const container=document.getElementById(`proverb-item-${id}`);
+  container.innerHTML=`
+    <div class="form-row">
+      <textarea class="form-input" id="proverb-edit-${id}" rows="2" style="resize:none">${p.text}</textarea>
+    </div>
+    <div class="modal-btns" style="margin-top:0">
+      <button class="btn-secondary" style="padding:9px" onclick="renderProverbs()">Cancelar</button>
+      <button class="btn-primary" style="padding:9px" onclick="saveProverbEdit('${id}')">Guardar</button>
+    </div>`;
+};
+
+window.saveProverbEdit=async(id)=>{
+  const text=document.getElementById(`proverb-edit-${id}`).value.trim();
+  if(!text){toast('⚠️ El proverbio no puede estar vacío');return}
+  try{
+    await update(ref(db,`groups/${state.code}/proverbs/${id}`),{text});
+    toast('📖 Proverbio actualizado');
+  }catch(e){toast('❌ Error al guardar')}
+};
+
+window.deleteProverb=async(id)=>{
+  if(!confirm('¿Eliminar este proverbio?')) return;
+  try{
+    await remove(ref(db,`groups/${state.code}/proverbs/${id}`));
+    toast('🗑️ Proverbio eliminado');
+  }catch(e){toast('❌ Error al eliminar')}
+};
 
 // ── HALL OF FAME (epic moments) ────────────────────────────
 window.addHofMoment=async()=>{
@@ -1747,7 +1785,7 @@ window.addHofMoment=async()=>{
   input.value='';
   try{
     await push(ref(db,`groups/${state.code}/hallOfFame`),{
-      who:state.me, text, year:new Date().getFullYear(), ts:Date.now()
+      text, year:new Date().getFullYear(), ts:Date.now()
     });
     await push(ref(db,`groups/${state.code}/log`),{
       type:'add', who:state.me,
@@ -1761,7 +1799,7 @@ function renderHofMoments(){
   const el=document.getElementById('hof-list');
   if(!el) return;
   const hofObj=state.group?.hallOfFame||{};
-  const list=Object.values(hofObj).sort((a,b)=>a.ts-b.ts);
+  const list=Object.entries(hofObj).map(([id,p])=>({...p,id})).sort((a,b)=>a.ts-b.ts);
   if(!list.length){
     el.innerHTML='<div class="empty" style="padding:1rem"><div class="big">🏆</div><p>Sin momentos épicos todavía<br>¡La leyenda espera ser escrita!</p></div>';
     return;
@@ -1771,13 +1809,49 @@ function renderHofMoments(){
     const y=p.year||new Date(p.ts).getFullYear();
     countByYear[y]=(countByYear[y]||0)+1;
     const entry=countByYear[y];
-    return`<div class="proverb-item">
-      <div class="proverb-ref">Hall of Fame ${y}, ${entry}</div>
-      <div class="proverb-text">"${p.text}"</div>
-      <div class="proverb-author">— ${p.who}</div>
+    return`<div class="proverb-item" id="hof-item-${p.id}">
+      <div class="proverb-view">
+        <div class="proverb-ref">Hall of Fame ${y}, ${entry}</div>
+        <div class="proverb-text">"${p.text}"</div>
+        <div class="proverb-actions">
+          <button class="proverb-action-btn" onclick="editHofMoment('${p.id}')">✏️ Editar</button>
+          <button class="proverb-action-btn danger" onclick="deleteHofMoment('${p.id}')">🗑️ Eliminar</button>
+        </div>
+      </div>
     </div>`;
   }).reverse().join('');
 }
+
+window.editHofMoment=(id)=>{
+  const p=state.group?.hallOfFame?.[id];
+  if(!p) return;
+  const container=document.getElementById(`hof-item-${id}`);
+  container.innerHTML=`
+    <div class="form-row">
+      <textarea class="form-input" id="hof-edit-${id}" rows="2" style="resize:none">${p.text}</textarea>
+    </div>
+    <div class="modal-btns" style="margin-top:0">
+      <button class="btn-secondary" style="padding:9px" onclick="renderHofMoments()">Cancelar</button>
+      <button class="btn-primary" style="padding:9px" onclick="saveHofEdit('${id}')">Guardar</button>
+    </div>`;
+};
+
+window.saveHofEdit=async(id)=>{
+  const text=document.getElementById(`hof-edit-${id}`).value.trim();
+  if(!text){toast('⚠️ El momento no puede estar vacío');return}
+  try{
+    await update(ref(db,`groups/${state.code}/hallOfFame/${id}`),{text});
+    toast('🏆 Momento actualizado');
+  }catch(e){toast('❌ Error al guardar')}
+};
+
+window.deleteHofMoment=async(id)=>{
+  if(!confirm('¿Eliminar este momento del Hall of Fame?')) return;
+  try{
+    await remove(ref(db,`groups/${state.code}/hallOfFame/${id}`));
+    toast('🗑️ Momento eliminado');
+  }catch(e){toast('❌ Error al eliminar')}
+};
 
 // ── LEGEND (fixed admin-set honorary title) ────────────────
 function renderLegend(){
