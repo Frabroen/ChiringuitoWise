@@ -245,6 +245,11 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 .mlp-vote-reason-input{width:100%;padding:7px 10px;border:1.5px solid rgba(0,0,0,0.12);border-radius:8px;font-size:12px;outline:none;font-family:inherit;background:white;color:var(--text);display:none}
 .mlp-vote-reason-input.show{display:block}
 .mlp-day-winner{background:#FEF3C7;border-radius:8px;padding:8px 10px;font-size:12px;color:#92400E;font-weight:600;margin-bottom:10px;text-align:center}
+.split-manual-row{display:flex;align-items:center;gap:8px;background:white;border:1.5px solid rgba(0,0,0,0.1);border-radius:9px;padding:8px 10px}
+.split-manual-name{flex:1;font-size:13px;font-weight:500}
+.split-manual-amt{width:90px;padding:6px 8px;border:1.5px solid rgba(0,0,0,0.12);border-radius:7px;font-size:13px;text-align:right;outline:none;font-family:inherit}
+.split-manual-amt:focus{border-color:var(--sea)}
+.split-manual-clear{width:26px;height:26px;border-radius:6px;border:1px solid #FEE2E2;background:#FFF5F5;color:#DC2626;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 @media(max-width:400px){.stat-val{font-size:16px}.share-code{font-size:26px}}
 </style>
 </head>
@@ -521,6 +526,8 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
     <div class="form-row">
       <label class="form-label">Dividir entre</label>
       <div class="chips-grid" id="split-chips"></div>
+      <div id="split-manual-rows" style="margin-top:8px;display:flex;flex-direction:column;gap:6px"></div>
+      <div id="split-remainder-hint" style="font-size:11px;color:var(--text-light);margin-top:6px;display:none"></div>
     </div>
 
     <div class="form-row">
@@ -543,7 +550,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
       <div class="receipt-upload" id="receipt-upload" onclick="document.getElementById('receipt-file').click()">
         <div class="up-icon">📸</div>
         <div class="up-text">Toca para hacer foto o elegir de la galería</div>
-        <input type="file" id="receipt-file" accept="image/*" capture="environment" style="display:none" onchange="handleReceiptPhoto(this)">
+        <input type="file" id="receipt-file" accept="image/*" style="display:none" onchange="handleReceiptPhoto(this)">
       </div>
       <div class="receipt-preview" id="receipt-preview">
         <img id="receipt-img" src="" alt="Factura">
@@ -714,7 +721,7 @@ function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t
 function fmtTime(ts){const d=new Date(ts);return d.toLocaleDateString('es',{day:'2-digit',month:'short'})+' · '+d.toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'})}
 function todayKey(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
 
-let state={code:null,me:null,group:null,unsubscribe:null,pendingDeleteId:null,pendingEditId:null,currentLocation:null,receiptB64:null,manualLocVisible:false};
+let state={code:null,me:null,group:null,unsubscribe:null,pendingDeleteId:null,pendingEditId:null,currentLocation:null,receiptB64:null,manualLocVisible:false,manualAmounts:{}};
 let pendingRemoveMember=null;
 
 function loadSession(){try{state.code=localStorage.getItem('cw_code');state.me=localStorage.getItem('cw_me')}catch(e){}}
@@ -1074,12 +1081,14 @@ function renderExpenses(expenses){
   const el=document.getElementById('expenses-list');
   const sorted=[...expenses].filter(e=>!e.settle).sort((a,b)=>(b.date||0)-(a.date||0));
   if(!sorted.length){el.innerHTML='<div class="empty"><div class="big">🌴</div><p>Sin gastos todavía<br>¡Alguien pide la primera ronda!</p></div>';return}
-  el.innerHTML=sorted.map(e=>`
+  el.innerHTML=sorted.map(e=>{
+    const ppText=e.customShares?'reparto personalizado':`${fmt(e.amount/(e.splitAmong||[1]).length)}/p.`;
+    return`
     <div class="exp-block">
       <div class="exp-main">
         <div class="cat-icon" style="background:${CATBG[e.cat]||'#F1F5F9'}">${CATS[e.cat]||'☀️'}</div>
         <div class="item-info">
-          <div class="item-title">${e.desc}</div>
+          <div class="item-title">${e.desc}${e.customShares?' 🔢':''}</div>
           <div class="item-sub">Pagó ${e.payer} · ${(e.splitAmong||[]).length} personas</div>
           ${e.location?`<div class="item-loc">
             <span onclick="openMap('${e.location.replace(/'/g,"\\'")}')">📍 ${e.location}</span>
@@ -1089,26 +1098,34 @@ function renderExpenses(expenses){
         <div class="item-right">
           <div>
             <div class="item-amount">${fmt(e.amount)}</div>
-            <div class="item-pp">${fmt(e.amount/(e.splitAmong||[1]).length)}/p.</div>
+            <div class="item-pp">${ppText}</div>
           </div>
           <button class="del-btn" style="background:#F0F9FF;border-color:#BAE6FD;color:#0369A1" onclick="openEditModal('${e.id}')" title="Editar">✏️</button>
           <button class="del-btn" onclick="openDeleteModal('${e.id}','${(e.desc||'').replace(/'/g,"\\'")}',${e.amount})">🗑️</button>
         </div>
       </div>
+      ${e.customShares?`<div style="margin-left:48px;margin-top:4px;display:flex;flex-wrap:wrap;gap:4px">
+        ${e.splitAmong.map(m=>`<span style="font-size:11px;background:var(--foam);color:var(--sea-dark);padding:2px 8px;border-radius:99px">${m}: ${fmt(e.customShares[m]||0)}</span>`).join('')}
+      </div>`:''}
       ${e.receipt?`<div class="receipt-thumb" style="display:flex;align-items:center;gap:8px">
         <img src="${e.receipt}" alt="Factura" onclick="openLightbox('${e.receipt}')">
         <button onclick="deleteReceipt('${e.id}')" style="width:26px;height:26px;border-radius:50%;background:#FFF5F5;border:1px solid #FEE2E2;color:#DC2626;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0" title="Eliminar foto">✕</button>
       </div>`:''}
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 function calcNet(expenses,members){
   const net={};members.forEach(m=>net[m]=0);
   (expenses||[]).forEach(e=>{
     if(!e.splitAmong||!e.splitAmong.length)return;
-    const share=e.amount/e.splitAmong.length;
     if(net[e.payer]!==undefined)net[e.payer]+=e.amount;
-    e.splitAmong.forEach(m=>{if(net[m]!==undefined)net[m]-=share});
+    if(e.customShares){
+      e.splitAmong.forEach(m=>{if(net[m]!==undefined)net[m]-=(e.customShares[m]||0)});
+    }else{
+      const share=e.amount/e.splitAmong.length;
+      e.splitAmong.forEach(m=>{if(net[m]!==undefined)net[m]-=share});
+    }
   });
   return net;
 }
@@ -1160,7 +1177,7 @@ function renderSettle(net){
       ${t.from===state.me||t.to===state.me?`<button class="settle-btn" onclick="markSettled('${t.from}','${t.to}',${t.amt})">Saldar 🤝</button>`:''}
       ${related.length?`<div class="settle-detail" id="${detailId}" style="width:100%">
         <div style="font-size:11px;color:var(--text-light);margin-bottom:4px">Este saldo viene del cálculo global de gastos, no de un único gasto. Gastos donde ${t.to} pagó y ${t.from} participó:</div>
-        ${related.map(e=>`<div class="settle-detail-item"><span>${e.desc}</span><span>${fmt(e.amount/(e.splitAmong||[1]).length)}</span></div>`).join('')}
+        ${related.map(e=>`<div class="settle-detail-item"><span>${e.desc}</span><span>${fmt(e.customShares?(e.customShares[t.from]||0):e.amount/(e.splitAmong||[1]).length)}</span></div>`).join('')}
       </div>`:''}
     </div>`;
   }).join('');
@@ -1209,19 +1226,88 @@ window.showPanel=(id)=>{
 window.openModal=()=>{
   const members=Object.keys(state.group?.members||{});
   document.getElementById('e-payer').innerHTML=members.map(m=>`<option value="${m}"${m===state.me?' selected':''}>${m}</option>`).join('');
-  document.getElementById('split-chips').innerHTML=members.map(m=>`<div class="chip sel" data-name="${m}" onclick="this.classList.toggle('sel')">${m}</div>`).join('');
+  document.getElementById('split-chips').innerHTML=members.map(m=>`<div class="chip sel" data-name="${m}" onclick="toggleSplitChip(this)">${m}</div>`).join('');
   document.getElementById('e-desc').value='';
   document.getElementById('e-amt').value='';
   document.getElementById('loc-manual-input').value='';
   document.getElementById('loc-manual').style.display='none';
   document.getElementById('loc-toggle').textContent='✏️ Escribir manualmente';
   state.manualLocVisible=false;
+  state.manualAmounts={};
   removeReceipt();
+  renderSplitManualRows();
   document.getElementById('expense-modal').classList.add('open');
   if('Notification' in window&&Notification.permission==='default') Notification.requestPermission();
   setTimeout(()=>document.getElementById('e-desc').focus(),150);
   getLocation();
 };
+
+window.toggleSplitChip=(chipEl)=>{
+  chipEl.classList.toggle('sel');
+  const name=chipEl.dataset.name;
+  if(!chipEl.classList.contains('sel')) delete state.manualAmounts[name];
+  renderSplitManualRows();
+};
+
+function renderSplitManualRows(){
+  const container=document.getElementById('split-manual-rows');
+  const hint=document.getElementById('split-remainder-hint');
+  const selected=[...document.querySelectorAll('#split-chips .chip.sel')].map(c=>c.dataset.name);
+  if(!selected.length){ container.innerHTML=''; hint.style.display='none'; return; }
+  container.innerHTML=selected.map(m=>`
+    <div class="split-manual-row">
+      <div class="avatar" style="width:26px;height:26px;font-size:9px;background:${getMemberBg(m)};overflow:hidden">${getMemberAvatar(m)}</div>
+      <div class="split-manual-name">${m}</div>
+      <input class="split-manual-amt" type="number" min="0" step="0.01" placeholder="auto"
+        value="${state.manualAmounts[m]!==undefined?state.manualAmounts[m]:''}"
+        oninput="setManualAmount('${m.replace(/'/g,"\\'")}',this.value)">
+      ${state.manualAmounts[m]!==undefined?`<button class="split-manual-clear" onclick="clearManualAmount('${m.replace(/'/g,"\\'")}')">✕</button>`:'<span style="width:26px"></span>'}
+    </div>`).join('');
+  updateSplitRemainderHint();
+}
+
+window.setManualAmount=(name, value)=>{
+  const v=parseFloat(value);
+  if(value===''||isNaN(v)){ delete state.manualAmounts[name]; }
+  else{ state.manualAmounts[name]=v; }
+  updateSplitRemainderHint();
+};
+
+window.clearManualAmount=(name)=>{
+  delete state.manualAmounts[name];
+  renderSplitManualRows();
+};
+
+function updateSplitRemainderHint(){
+  const hint=document.getElementById('split-remainder-hint');
+  const total=parseFloat(document.getElementById('e-amt').value)||0;
+  const selected=[...document.querySelectorAll('#split-chips .chip.sel')].map(c=>c.dataset.name);
+  const manualNames=Object.keys(state.manualAmounts||{});
+  const manualSum=manualNames.reduce((s,n)=>s+(state.manualAmounts[n]||0),0);
+  const autoCount=selected.length-manualNames.length;
+  if(!total||!selected.length){ hint.style.display='none'; return; }
+  if(!manualNames.length){ hint.style.display='none'; return; }
+  const remainder=total-manualSum;
+  hint.style.display='block';
+  if(autoCount>0){
+    const perPerson=remainder/autoCount;
+    if(remainder<0){
+      hint.style.color='#DC2626';
+      hint.textContent=`⚠️ Las cantidades manuales (${fmt(manualSum)}) superan el total (${fmt(total)})`;
+    }else{
+      hint.style.color='var(--text-light)';
+      hint.textContent=`El resto (${fmt(remainder)}) se reparte entre ${autoCount} persona${autoCount>1?'s':''}: ${fmt(perPerson)}/persona`;
+    }
+  }else if(Math.abs(remainder)>0.01){
+    hint.style.color='#DC2626';
+    hint.textContent=`⚠️ Sobran ${fmt(remainder)} sin asignar — añade a alguien sin cantidad manual o ajusta las cifras`;
+  }else{
+    hint.style.color='var(--text-light)';
+    hint.textContent=`Todo asignado manualmente ✓`;
+  }
+}
+
+document.getElementById('e-amt').addEventListener('input', updateSplitRemainderHint);
 
 window.closeModal=()=>document.getElementById('expense-modal').classList.remove('open');
 
@@ -1232,17 +1318,36 @@ window.addExpense=async()=>{
   const cat=document.getElementById('e-cat').value;
   const splitAmong=[...document.querySelectorAll('.chip.sel')].map(c=>c.dataset.name);
   if(!desc||!amt||amt<=0||!splitAmong.length){toast('⚠️ Completa todos los campos');return}
+
+  const manualAmounts=state.manualAmounts||{};
+  const manualNames=Object.keys(manualAmounts).filter(n=>splitAmong.includes(n));
+  const manualSum=manualNames.reduce((s,n)=>s+(manualAmounts[n]||0),0);
+  const autoNames=splitAmong.filter(n=>!manualNames.includes(n));
+  let customShares=null;
+  if(manualNames.length){
+    const remainder=amt-manualSum;
+    if(remainder<-0.001){toast('⚠️ Las cantidades manuales superan el total del gasto');return}
+    if(autoNames.length===0 && Math.abs(remainder)>0.01){toast('⚠️ Sobra dinero sin asignar — revisa las cantidades');return}
+    customShares={};
+    manualNames.forEach(n=>{ customShares[n]=manualAmounts[n]; });
+    if(autoNames.length){
+      const perPerson=remainder/autoNames.length;
+      autoNames.forEach(n=>{ customShares[n]=perPerson; });
+    }
+  }
+
   const loc=getFinalLocation();
   const receipt=state.receiptB64||null;
   try{
     await push(ref(db,`groups/${state.code}/expenses`),{
       desc,amount:amt,payer,cat,splitAmong,date:Date.now(),
+      ...(customShares&&{customShares}),
       ...(loc&&{location:loc}),
       ...(receipt&&{receipt})
     });
     await push(ref(db,`groups/${state.code}/log`),{
       type:'add',who:state.me,
-      msg:`${state.me} añadió "${desc}" — ${fmt(amt)} (pagó ${payer})${receipt?' 📷':''}`,
+      msg:`${state.me} añadió "${desc}" — ${fmt(amt)} (pagó ${payer})${receipt?' 📷':''}${customShares?' 🔢':''}`,
       ...(loc&&{location:loc}),
       ts:Date.now()
     });
@@ -1253,6 +1358,7 @@ window.addExpense=async()=>{
     else toast('❌ Error al guardar');
   }
 };
+
 
 window.openEditModal=(id)=>{
   const exp=state.group?.expenses?.[id];
@@ -1704,7 +1810,7 @@ function getMyVotesForDay(mlpVotesObj, dateKey, voterName){
   const mine={};
   Object.entries(mlpVotesObj||{}).forEach(([person,votes])=>{
     Object.values(votes||{}).forEach(v=>{
-      if(v.date===dateKey && v.voter===voter) mine[person]={score:v.points, reason:v.reason};
+      if(v.date===dateKey && v.voter===voter) mine[person]={score:v.points, reason:v.reason, voted:true};
     });
   });
   return mine;
@@ -1769,6 +1875,7 @@ function cssSafe(name){
 window.mlpSetScore=(person, score)=>{
   if(!mlpDraftVotes[person]) mlpDraftVotes[person]={score:0,reason:''};
   mlpDraftVotes[person].score=score;
+  mlpDraftVotes[person].voted=true;
   const scoresEl=document.getElementById(`mlp-scores-${cssSafe(person)}`);
   if(scoresEl){
     [...scoresEl.children].forEach((btn,i)=>{
@@ -1777,32 +1884,31 @@ window.mlpSetScore=(person, score)=>{
   }
   const reasonEl=document.getElementById(`mlp-reason-${cssSafe(person)}`);
   if(reasonEl) reasonEl.classList.toggle('show', score<0);
-  if(score===0){ delete mlpDraftVotes[person]; }
 };
 
 window.mlpSetReason=(person, value)=>{
-  if(!mlpDraftVotes[person]) mlpDraftVotes[person]={score:0,reason:''};
+  if(!mlpDraftVotes[person]) mlpDraftVotes[person]={score:0,reason:'',voted:true};
   mlpDraftVotes[person].reason=value;
 };
 
 window.submitMlpVotes=async()=>{
   const voterName=mlpVoterAs||state.me;
-  const entries=Object.entries(mlpDraftVotes).filter(([,v])=>v.score<0);
-  const missingReason=entries.find(([,v])=>!v.reason || !v.reason.trim());
+  const entries=Object.entries(mlpDraftVotes).filter(([,v])=>v.voted);
+  const missingReason=entries.find(([,v])=>v.score<0 && (!v.reason || !v.reason.trim()));
   if(missingReason){toast(`⚠️ Falta el motivo para ${missingReason[0]}`);return}
-  if(!entries.length){toast('⚠️ Pon al menos una puntuación negativa');return}
+  if(!entries.length){toast('⚠️ Puntúa al menos a una persona');return}
   try{
     const updates={};
     entries.forEach(([person,v])=>{
       const voteId=`${mlpViewDate}_${voterName}`;
       updates[`mlpVotes/${person}/${voteId}`]={
-        voter:voterName, points:v.score, reason:v.reason.trim(), ts:Date.now(), date:mlpViewDate
+        voter:voterName, points:v.score, reason:(v.reason||'').trim(), ts:Date.now(), date:mlpViewDate
       };
     });
-    // Remove votes for people set back to 0 that existed before
+    // Remove votes for people that were unmarked
     const existing=getMyVotesForDay(state.group?.mlpVotes||{}, mlpViewDate, voterName);
     Object.keys(existing).forEach(person=>{
-      if(!mlpDraftVotes[person] || mlpDraftVotes[person].score===0){
+      if(!mlpDraftVotes[person] || !mlpDraftVotes[person].voted){
         const voteId=`${mlpViewDate}_${voterName}`;
         updates[`mlpVotes/${person}/${voteId}`]=null;
       }
@@ -1892,7 +1998,6 @@ function renderMlpDayVotes(){
       if(v.date===mlpViewDate) dayVotes.push({...v, person});
     });
   });
-  dayVotes.sort((a,b)=>b.ts-a.ts);
   if(!dayVotes.length){
     el.innerHTML=`<div class="empty" style="padding:1rem"><div class="big">📅</div><p>Nadie ha votado este día todavía</p></div>`;
     return;
@@ -1904,14 +2009,38 @@ function renderMlpDayVotes(){
   const winnerHtml = dayWinner && dayWinner[1]<0
     ? `<div class="mlp-day-winner">🏆 MLP del día: ${dayWinner[0]} (${dayWinner[1]})</div>`
     : '';
-  el.innerHTML = winnerHtml + dayVotes.map(v=>`
-    <div class="mlp-vote-item">
-      <span class="mlp-vote-icon">👎</span>
-      <div style="flex:1">
-        <div><strong>${v.voter}</strong> votó <strong>${v.points}</strong> a <strong>${v.person}</strong></div>
-        <div style="color:var(--text-light);font-size:12px">"${v.reason}"</div>
+
+  // Group by person voted (the target), showing all voters + reasons for each
+  const byPerson={};
+  dayVotes.forEach(v=>{
+    if(!byPerson[v.person]) byPerson[v.person]=[];
+    byPerson[v.person].push(v);
+  });
+  const sortedPeople=Object.entries(byPerson).sort((a,b)=>{
+    const totalA=a[1].reduce((s,v)=>s+v.points,0);
+    const totalB=b[1].reduce((s,v)=>s+v.points,0);
+    return totalA-totalB;
+  });
+
+  el.innerHTML = winnerHtml + sortedPeople.map(([person, votes])=>{
+    votes.sort((a,b)=>b.ts-a.ts);
+    const total=votes.reduce((s,v)=>s+v.points,0);
+    return`<div style="margin-bottom:12px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <div class="avatar" style="width:28px;height:28px;font-size:10px;background:${getMemberBg(person)};overflow:hidden">${getMemberAvatar(person)}</div>
+        <div style="flex:1;font-size:13px;font-weight:600">${person}</div>
+        <div style="font-size:13px;font-weight:700;color:${total<0?'#DC2626':'var(--text-light)'}">${total}</div>
       </div>
-    </div>`).join('');
+      ${votes.map(v=>`
+        <div class="mlp-vote-item" style="padding-left:36px">
+          <span class="mlp-vote-icon">👎</span>
+          <div style="flex:1">
+            <div><strong>${v.voter}</strong> votó <strong>${v.points}</strong></div>
+            <div style="color:var(--text-light);font-size:12px">"${v.reason}"</div>
+          </div>
+        </div>`).join('')}
+    </div>`;
+  }).join('');
 }
 
 function renderMlp(){
