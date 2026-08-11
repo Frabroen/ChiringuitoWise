@@ -264,6 +264,12 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 .proverb-ref{font-size:11px;font-weight:700;color:var(--coral);margin-bottom:3px;letter-spacing:0.02em}
 .proverb-text{font-size:14px;line-height:1.5;color:var(--text);font-style:italic}
 .proverb-author{font-size:11px;color:var(--text-light);margin-top:3px;text-align:right}
+.legend-avatar{width:80px;height:80px;border-radius:50%;overflow:hidden;margin:0 auto 12px;border:3px solid #FCD34D;box-shadow:0 0 20px rgba(252,211,77,0.4)}
+.legend-name{font-size:20px;font-weight:800;color:#FCD34D;text-align:center;letter-spacing:0.02em}
+.legend-titles{font-size:11px;color:#94A3B8;text-align:center;text-transform:uppercase;letter-spacing:0.08em;margin-top:2px;margin-bottom:10px}
+.legend-desc{font-size:13px;color:#CBD5E1;line-height:1.6;text-align:center;font-style:italic;padding:0 8px}
+.legend-empty{text-align:center;color:#64748B;padding:1.5rem 0}
+.legend-edit-btn{display:block;margin:12px auto 0;font-size:11px;color:#7DD3FC;background:none;border:none;cursor:pointer;text-decoration:underline}
 @media(max-width:400px){.stat-val{font-size:16px}.share-code{font-size:26px}}
 </style>
 </head>
@@ -365,7 +371,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
     <div class="tab" onclick="showPanel('gastos')"><span class="ti">🍺</span>Gastos</div>
     <div class="tab" onclick="showPanel('balances')"><span class="ti">⚖️</span>Balances</div>
     <div class="tab" onclick="showPanel('mlp')"><span class="ti">🏆</span>MLP</div>
-    <div class="tab" onclick="showPanel('galeria')"><span class="ti">📸</span>Galería</div>
+    <div class="tab" onclick="showPanel('galeria')"><span class="ti">📖</span>Legado</div>
     <div class="tab" onclick="showPanel('share')"><span class="ti">🌴</span>Grupo</div>
   </div>
 
@@ -386,15 +392,6 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
           <input class="form-input" id="chat-input" placeholder="Escribe algo..." style="flex:1;padding:9px 12px"
             onkeydown="if(event.key==='Enter')sendChat()">
           <button class="btn-primary" style="flex:none;padding:9px 16px;font-size:15px" onclick="sendChat()">➤</button>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-head"><span class="card-icon">📖</span><span class="card-title">Proverbios de la Costalita</span></div>
-        <div id="proverbs-list" style="margin-bottom:10px"></div>
-        <div style="display:flex;gap:8px">
-          <input class="form-input" id="proverb-input" placeholder="Escribe la frase para la historia..." style="flex:1;padding:9px 12px"
-            onkeydown="if(event.key==='Enter')addProverb()">
-          <button class="btn-primary" style="flex:none;padding:9px 16px;font-size:15px" onclick="addProverb()">➤</button>
         </div>
       </div>
     </div>
@@ -479,13 +476,47 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 
     <div class="panel" id="panel-galeria">
       <div class="card">
-        <div class="card-head"><span class="card-icon">📸</span><span class="card-title">Fotos de grupo por año</span></div>
-        <p style="font-size:12px;color:var(--text-mid);margin-bottom:2px">Cualquiera puede subir o cambiar la foto de cada año</p>
+        <div class="card-head"><span class="card-icon">📖</span><span class="card-title">Proverbios de la Costalita</span></div>
+        <div id="proverbs-list" style="margin-bottom:10px"></div>
+        <div style="display:flex;gap:8px">
+          <input class="form-input" id="proverb-input" placeholder="Escribe la frase para la historia..." style="flex:1;padding:9px 12px"
+            onkeydown="if(event.key==='Enter')addProverb()">
+          <button class="btn-primary" style="flex:none;padding:9px 16px;font-size:15px" onclick="addProverb()">➤</button>
+        </div>
       </div>
-      <div id="gallery-years"></div>
+      <div class="card">
+        <div class="card-head"><span class="card-icon">🏆</span><span class="card-title">Hall of Fame</span></div>
+        <p style="font-size:12px;color:var(--text-mid);margin-bottom:10px">Momentos épicos que pasarán a la historia</p>
+        <div id="hof-list" style="margin-bottom:10px"></div>
+        <div style="display:flex;gap:8px">
+          <input class="form-input" id="hof-input" placeholder="Describe el momento épico..." style="flex:1;padding:9px 12px"
+            onkeydown="if(event.key==='Enter')addHofMoment()">
+          <button class="btn-primary" style="flex:none;padding:9px 16px;font-size:15px" onclick="addHofMoment()">➤</button>
+        </div>
+      </div>
+      <div class="card" style="background:linear-gradient(135deg,#1E293B,#0F172A);border-color:#334155">
+        <div class="card-head"><span class="card-icon">✨</span><span class="card-title" style="color:#94A3B8">Leyenda Histórica</span></div>
+        <div id="legend-display"></div>
+        <div id="legend-admin-edit" style="display:none;margin-top:10px">
+          <input class="form-input" id="legend-name-input" placeholder="Nombre de la leyenda" style="margin-bottom:8px">
+          <textarea class="form-input" id="legend-desc-input" placeholder="Descripción épica..." rows="3" style="resize:none;margin-bottom:8px"></textarea>
+          <button class="btn-primary" style="width:100%" onclick="saveLegend()">✨ Consagrar leyenda</button>
+        </div>
+      </div>
     </div>
 
     <div class="panel" id="panel-share">
+      <div class="card">
+        <div class="card-head"><span class="card-icon">📸</span><span class="card-title" id="costaliteros-title">Costaliteros del año</span></div>
+        <div class="gallery-photo-box" id="costaliteros-photo-box" onclick="document.getElementById('costaliteros-file').click()">
+          <div class="gallery-photo-empty"><div class="big">📷</div><p>Sin foto todavía<br>Toca para añadir</p></div>
+        </div>
+        <input type="file" id="costaliteros-file" accept="image/*" style="display:none" onchange="handleCostaliterosPhoto(this)">
+        <div id="costaliteros-actions" style="display:none" class="gallery-photo-actions">
+          <button class="btn-secondary" style="padding:9px" onclick="document.getElementById('costaliteros-file').click()">📷 Cambiar foto</button>
+          <button class="btn-danger" style="padding:9px" onclick="deleteCostaliterosPhoto()">🗑️</button>
+        </div>
+      </div>
       <div class="card">
         <div class="card-head"><span class="card-icon">🔗</span><span class="card-title">Invita a tus amigos</span></div>
         <div class="share-banner">
@@ -797,65 +828,58 @@ window.removeReceipt=()=>{
   document.getElementById('receipt-upload').style.display='block';
 };
 
-// ── GALLERY (yearly group photo) ──────────────────────────
-const GALLERY_YEARS=[2022,2023,2024,2025,2026];
-
-function renderGallery(){
-  const container=document.getElementById('gallery-years');
-  if(!container) return;
-  const photos=state.group?.galleryPhotos||{};
-  container.innerHTML=GALLERY_YEARS.map(year=>{
-    const p=photos[year];
-    return`<div class="gallery-year-card">
-      <div class="gallery-year-head">
-        <div class="gallery-year-label">🏖️ ${year}</div>
-        ${p?`<div class="gallery-year-meta">Subida por ${p.uploadedBy}</div>`:''}
-      </div>
-      <div class="gallery-photo-box" onclick="${p?`openLightbox('${p.data}')`:`document.getElementById('gallery-file-${year}').click()`}">
-        ${p
-          ? `<img src="${p.data}" alt="Foto ${year}">`
-          : `<div class="gallery-photo-empty"><div class="big">📷</div><p>Sin foto todavía<br>Toca para añadir</p></div>`}
-      </div>
-      <input type="file" id="gallery-file-${year}" accept="image/*" style="display:none" onchange="handleGalleryPhoto(this,${year})">
-      ${p?`<div class="gallery-photo-actions">
-        <button class="btn-secondary" style="padding:9px" onclick="document.getElementById('gallery-file-${year}').click()">📷 Cambiar foto</button>
-        <button class="btn-danger" style="padding:9px" onclick="deleteGalleryPhoto(${year})">🗑️</button>
-      </div>`:''}
-    </div>`;
-  }).join('');
+// ── COSTALITEROS DEL AÑO (single current-year group photo) ─
+function renderCostaliterosPhoto(){
+  const box=document.getElementById('costaliteros-photo-box');
+  const actions=document.getElementById('costaliteros-actions');
+  const titleEl=document.getElementById('costaliteros-title');
+  if(!box) return;
+  const year=new Date().getFullYear();
+  titleEl.textContent=`Costaliteros del año ${year}`;
+  const p=state.group?.yearPhoto;
+  if(p && p.year===year){
+    box.innerHTML=`<img src="${p.data}" alt="Costaliteros ${year}">`;
+    box.onclick=()=>openLightbox(p.data);
+    actions.style.display='flex';
+  }else{
+    box.innerHTML=`<div class="gallery-photo-empty"><div class="big">📷</div><p>Sin foto todavía<br>Toca para añadir</p></div>`;
+    box.onclick=()=>document.getElementById('costaliteros-file').click();
+    actions.style.display='none';
+  }
 }
 
-window.handleGalleryPhoto=async(input, year)=>{
+window.handleCostaliterosPhoto=async(input)=>{
   const file=input.files[0];
   if(!file) return;
   toast('⏳ Comprimiendo imagen...');
   try{
     const b64=await compressImage(file);
-    await update(ref(db,`groups/${state.code}/galleryPhotos/${year}`),{
-      data:b64, uploadedBy:state.me, ts:Date.now()
+    const year=new Date().getFullYear();
+    await update(ref(db,`groups/${state.code}`),{
+      yearPhoto:{data:b64, uploadedBy:state.me, year, ts:Date.now()}
     });
     await push(ref(db,`groups/${state.code}/log`),{
       type:'add', who:state.me,
-      msg:`${state.me} añadió la foto de grupo de ${year} 📸`,
+      msg:`${state.me} añadió la foto de Costaliteros del ${year} 📸`,
       ts:Date.now()
     });
-    toast(`📸 Foto de ${year} guardada`);
+    toast(`📸 Foto guardada`);
   }catch(e){
     toast('❌ Error al guardar la foto');
   }
   input.value='';
 };
 
-window.deleteGalleryPhoto=async(year)=>{
-  if(!confirm(`¿Eliminar la foto de grupo de ${year}?`)) return;
+window.deleteCostaliterosPhoto=async()=>{
+  if(!confirm('¿Eliminar la foto de Costaliteros de este año?')) return;
   try{
-    await remove(ref(db,`groups/${state.code}/galleryPhotos/${year}`));
+    await update(ref(db,`groups/${state.code}`),{yearPhoto:null});
     await push(ref(db,`groups/${state.code}/log`),{
       type:'del', who:state.me,
-      msg:`${state.me} eliminó la foto de grupo de ${year}`,
+      msg:`${state.me} eliminó la foto de Costaliteros`,
       ts:Date.now()
     });
-    toast(`🗑️ Foto de ${year} eliminada`);
+    toast('🗑️ Foto eliminada');
   }catch(e){toast('❌ Error al eliminar')}
 };
 
@@ -1116,8 +1140,10 @@ function renderAll(){
   renderCyclesArchive(g.cycles||{});
   migrateMlpPositiveVotes(g.mlpVotes||{});
   renderMlp();
-  renderGallery();
+  renderCostaliterosPhoto();
   renderProverbs();
+  renderHofMoments();
+  renderLegend();
   renderStatusBar();
   renderPandillaStatus();
   renderChat(g.chat||{});
@@ -1669,6 +1695,97 @@ function renderProverbs(){
     </div>`;
   }).reverse().join('');
 }
+
+// ── HALL OF FAME (epic moments) ────────────────────────────
+window.addHofMoment=async()=>{
+  const input=document.getElementById('hof-input');
+  const text=input.value.trim();
+  if(!text) return;
+  input.value='';
+  try{
+    await push(ref(db,`groups/${state.code}/hallOfFame`),{
+      who:state.me, text, year:new Date().getFullYear(), ts:Date.now()
+    });
+    await push(ref(db,`groups/${state.code}/log`),{
+      type:'add', who:state.me,
+      msg:`${state.me} añadió un momento al Hall of Fame 🏆`,
+      ts:Date.now()
+    });
+  }catch(e){toast('❌ Error al guardar')}
+};
+
+function renderHofMoments(){
+  const el=document.getElementById('hof-list');
+  if(!el) return;
+  const hofObj=state.group?.hallOfFame||{};
+  const list=Object.values(hofObj).sort((a,b)=>a.ts-b.ts);
+  if(!list.length){
+    el.innerHTML='<div class="empty" style="padding:1rem"><div class="big">🏆</div><p>Sin momentos épicos todavía<br>¡La leyenda espera ser escrita!</p></div>';
+    return;
+  }
+  const countByYear={};
+  el.innerHTML=list.map(p=>{
+    const y=p.year||new Date(p.ts).getFullYear();
+    countByYear[y]=(countByYear[y]||0)+1;
+    const entry=countByYear[y];
+    return`<div class="proverb-item">
+      <div class="proverb-ref">Hall of Fame ${y}, ${entry}</div>
+      <div class="proverb-text">"${p.text}"</div>
+      <div class="proverb-author">— ${p.who}</div>
+    </div>`;
+  }).reverse().join('');
+}
+
+// ── LEGEND (fixed admin-set honorary title) ────────────────
+function renderLegend(){
+  const displayEl=document.getElementById('legend-display');
+  const editSection=document.getElementById('legend-admin-edit');
+  if(!displayEl) return;
+  const legend=state.group?.legend;
+  const admin=isAdmin();
+
+  if(legend && legend.name){
+    displayEl.innerHTML=`
+      <div class="legend-avatar" style="background:${getMemberBg(legend.name)}">${getMemberAvatar(legend.name)}</div>
+      <div class="legend-name">${legend.name}</div>
+      <div class="legend-titles">Leyenda · Guía Espiritual · Modelo de Éxito</div>
+      <div class="legend-desc">"${legend.desc||''}"</div>
+      ${admin?'<button class="legend-edit-btn" onclick="toggleLegendEdit()">✏️ Editar leyenda</button>':''}
+    `;
+  }else{
+    displayEl.innerHTML=`
+      <div class="legend-empty">✨<br>Aún no hay Leyenda Histórica<br>${admin?'Consagra a alguien abajo':'El admin puede consagrar a alguien'}</div>
+    `;
+  }
+
+  if(admin){
+    document.getElementById('legend-name-input').value=legend?.name||'';
+    document.getElementById('legend-desc-input').value=legend?.desc||'';
+  }
+}
+
+window.toggleLegendEdit=()=>{
+  const editSection=document.getElementById('legend-admin-edit');
+  editSection.style.display = editSection.style.display==='none' ? 'block' : 'none';
+};
+
+window.saveLegend=async()=>{
+  const name=document.getElementById('legend-name-input').value.trim();
+  const desc=document.getElementById('legend-desc-input').value.trim();
+  if(!name){toast('⚠️ Escribe un nombre');return}
+  try{
+    await update(ref(db,`groups/${state.code}`),{
+      legend:{name, desc, setBy:state.me, ts:Date.now()}
+    });
+    await push(ref(db,`groups/${state.code}/log`),{
+      type:'add', who:state.me,
+      msg:`${state.me} consagró a ${name} como Leyenda Histórica ✨`,
+      ts:Date.now()
+    });
+    document.getElementById('legend-admin-edit').style.display='none';
+    toast('✨ Leyenda consagrada');
+  }catch(e){toast('❌ Error al guardar')}
+};
 
 window.setStatus=async(key)=>{
   const current=state.group?.members?.[state.me]?.status;
