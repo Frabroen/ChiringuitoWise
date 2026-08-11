@@ -168,7 +168,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 .my-group-del:hover{background:#FEE2E2}
 .member-row:last-child{border-bottom:none}
 .status-bar{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
-.birro-card{background:white;border:2px solid var(--border);border-radius:16px;padding:14px;margin-bottom:12px;display:flex;align-items:center;gap:12px}
+.birro-card{background:white;border:2px solid var(--border);border-radius:16px;padding:14px;margin-bottom:12px;display:flex;align-items:center;gap:12px;will-change:transform}
 .birro-avatar{width:44px;height:44px;border-radius:50%;flex-shrink:0}
 .birro-info{flex:1;min-width:0}
 .birro-name-big{font-size:15px;font-weight:700;color:var(--text)}
@@ -1962,9 +1962,21 @@ function renderBirrometro(){
   const el=document.getElementById('birrometro-list');
   if(!el) return;
   const members=Object.keys(state.group?.members||{});
-  el.innerHTML=members.map(m=>{
+  const sorted=[...members].sort((a,b)=>{
+    const ca=state.group?.members?.[a]?.beers||0;
+    const cb=state.group?.members?.[b]?.beers||0;
+    return cb-ca;
+  });
+
+  // FLIP animation: capture current positions before reorder
+  const firstRects={};
+  el.querySelectorAll('.birro-card').forEach(card=>{
+    firstRects[card.dataset.member]=card.getBoundingClientRect();
+  });
+
+  el.innerHTML=sorted.map((m,i)=>{
     const count=state.group?.members?.[m]?.beers||0;
-    return`<div class="birro-card">
+    return`<div class="birro-card" data-member="${m.replace(/"/g,'&quot;')}">
       <div class="birro-avatar avatar" style="width:44px;height:44px;background:${getMemberBg(m)};overflow:hidden">${getMemberAvatar(m)}</div>
       <div class="birro-info">
         <div class="birro-name-big">${m}${m===state.me?' 🌟':''}</div>
@@ -1974,6 +1986,23 @@ function renderBirrometro(){
       <button class="birro-plus-btn" onclick="changeBeers('${m.replace(/'/g,"\\'")}',1)">+</button>
     </div>`;
   }).join('');
+
+  // Play FLIP: from old position to new, then let it settle
+  el.querySelectorAll('.birro-card').forEach(card=>{
+    const name=card.dataset.member;
+    const first=firstRects[name];
+    if(!first) return;
+    const last=card.getBoundingClientRect();
+    const deltaY=first.top-last.top;
+    if(Math.abs(deltaY)<1) return;
+    card.style.transform=`translateY(${deltaY}px)`;
+    card.style.transition='none';
+    requestAnimationFrame(()=>{
+      card.style.transition='transform 0.45s cubic-bezier(0.2,0.8,0.2,1)';
+      card.style.transform='translateY(0)';
+    });
+  });
+
   renderBirrometroBars();
 }
 
